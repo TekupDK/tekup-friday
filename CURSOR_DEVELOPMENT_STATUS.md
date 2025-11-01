@@ -11,35 +11,40 @@
 ### ✅ **Customer Profile System** (100% Functional)
 
 **Features implementeret i Manus:**
+
 - 👤 **4-Tab Customer Interface:** Overview, Invoices, Emails, Chat
-- 💰 **Financial Tracking:** Total Invoiced + Total Paid + Outstanding Balance  
+- 💰 **Financial Tracking:** Total Invoiced + Total Paid + Outstanding Balance
 - 🔄 **Real-time Sync:** "Opdater" (Billy) + "Sync Gmail" buttons
 - 🤖 **AI Resume Generation:** Customer sammenfatning med "Regenerate" button
 - 📱 **Mobile Responsive:** Touch-friendly, hamburger menu
 
 **How to Test:**
-1. Start: `pnpm dev` 
+
+1. Start: `pnpm dev`
 2. Go to: http://localhost:3000
 3. Click: Leads tab
 4. Click: "View Profile" button på any lead
 5. Browse: All 4 tabs (Overview, Invoices, Emails, Chat)
 
 ### ✅ **Database Schema** (Production Ready)
+
 ```sql
 -- Original 9 tables PLUS:
 customer_profiles     -- Kunde hoved-data (balance, AI resume)
 customer_invoices     -- Billy fakturaer per kunde
-customer_emails       -- Gmail threads per kunde  
+customer_emails       -- Gmail threads per kunde
 customer_conversations -- Friday chat per kunde
 ```
 
 **Database Commands:**
+
 ```powershell
 pnpm db:push     # Deploy schema
 pnpm db:studio   # Open database UI
 ```
 
 ### ✅ **Modern Tech Stack** (Latest Versions)
+
 - **React 19** + TypeScript (strict mode)
 - **tRPC 11** - Type-safe API layer
 - **Drizzle ORM** - Modern database ops
@@ -48,15 +53,17 @@ pnpm db:studio   # Open database UI
 - **MySQL** database
 
 ### ✅ **AI Integration** (Multi-Model)
+
 - **Gemini 2.5 Flash** (primary)
-- **Claude 3.5 Sonnet** 
+- **Claude 3.5 Sonnet**
 - **GPT-4o**
 - **Manus AI** (backup)
 - **Intent Detection** - 7 intelligent action types
 
 ### ✅ **Business Integration** (Advanced)
+
 - **Billy.dk API** - Invoice management + sync
-- **Google Gmail** - Email thread management  
+- **Google Gmail** - Email thread management
 - **Google Calendar** - Booking og scheduling
 - **25 MEMORY Rules** - Business logic implementation
 
@@ -65,42 +72,47 @@ pnpm db:studio   # Open database UI
 ## ⚠️ **Known Issues (Fra Manus)**
 
 ### **TypeScript Errors (14 total)**
+
 ```typescript
 // EmailTab.tsx - Gmail integration type mismatches
 Property 'subject' does not exist on type 'GmailThread'
-Property 'from' does not exist on type 'GmailThread'  
+Property 'from' does not exist on type 'GmailThread'
 Property 'to' does not exist on type 'GmailThread'
 ... (10 more similar)
 
-// InvoicesTab.tsx - Billy feedback type issues  
+// InvoicesTab.tsx - Billy feedback type issues
 'comment' does not exist in type (submitAnalysisFeedback)
 ```
 
 **Fix Priority:** 🟡 **MEDIUM** (functionality works, types need alignment)
 
 ### **Integration Needs Configuration**
+
 - **Billy API:** Needs real API keys for testing
 - **Gmail OAuth:** Needs Google Service Account setup
 - **Database:** Needs MySQL/TiDB connection string
 - **AI Models:** Needs API keys (fallback to heuristics works)
 
 ### **Mobile Testing Required**
+
 - **CSS fixes applied** but needs real device validation
 - **White screen issue** reportedly fixed
 - **Touch targets** implemented but untested
 
 ---
 
-## 🎯 **Immediate Cursor IDE Tasks** 
+## 🎯 **Immediate Cursor IDE Tasks**
 
 ### **Priority 1: Fix TypeScript (30 min)**
+
 ```typescript
 // Fix EmailTab.tsx Gmail type issues
-// Fix InvoicesTab.tsx feedback type issues  
+// Fix InvoicesTab.tsx feedback type issues
 // Goal: 0 TypeScript errors
 ```
 
 ### **Priority 2: Environment Setup (15 min)**
+
 ```powershell
 # Configure .env med rigtige API keys
 cp .env.example .env
@@ -108,15 +120,17 @@ cp .env.example .env
 ```
 
 ### **Priority 3: Test Customer Profiles (10 min)**
+
 ```
 # Test complete flow:
 1. Create test lead
-2. Click "View Profile"  
+2. Click "View Profile"
 3. Test all 4 tabs
 4. Test sync buttons (even if APIs not configured)
 ```
 
 ### **Priority 4: Integration Validation (20 min)**
+
 ```
 # Test real integrations:
 1. Billy API connection
@@ -130,6 +144,7 @@ cp .env.example .env
 ## 📚 **Cursor IDE Resources**
 
 ### **Documentation (Lokal)**
+
 ```
 docs/ARCHITECTURE.md      (605 linjer)   - System design
 docs/API_REFERENCE.md     (1,333 linjer) - tRPC endpoints
@@ -138,14 +153,16 @@ docs/CURSOR_RULES.md      (661 linjer)   - Code style for AI
 ```
 
 ### **Project Files**
+
 ```
 README.md                 - Feature overview
 STATUS.md                 - Current status
-ANALYSIS.md               - Technical analysis  
+ANALYSIS.md               - Technical analysis
 userGuide.md              - End-user guide
 ```
 
 ### **Migration Documentation (Parent Directory)**
+
 ```
 C:\Users\empir\Tekup\
 ├── FRIDAY_AI_MIGRATION_PLAN.md
@@ -160,6 +177,7 @@ C:\Users\empir\Tekup\
 ## 🔧 **Development Workflow (i Cursor)**
 
 ### **1. Feature Development Pattern**
+
 ```typescript
 // 1. Backend: Add tRPC procedure
 export const newRouter = router({
@@ -176,6 +194,7 @@ import { Card, Button } from "@/components/ui/[component]";
 ```
 
 ### **2. Database Operations**
+
 ```typescript
 // Drizzle ORM patterns
 import { db } from "./db";
@@ -187,10 +206,11 @@ const insertId = await db.insert(customerProfiles).values(data);
 ```
 
 ### **3. Customer Profile Extension**
+
 ```typescript
 // To add new tab eller feature:
 1. Update database schema (hvis nødvendig)
-2. Add tRPC endpoint i customer-router.ts  
+2. Add tRPC endpoint i customer-router.ts
 3. Add tab til CustomerProfile.tsx
 4. Implement UI components
 5. Test functionality
@@ -201,21 +221,24 @@ const insertId = await db.insert(customerProfiles).values(data);
 ## 🏆 **Manus Achievements**
 
 ### **Major Implementations**
+
 1. **Customer Profile System** - Complete 360° customer view
 2. **Mobile Responsiveness** - Professional responsive design
-3. **Billy Integration** - Advanced invoice management  
+3. **Billy Integration** - Advanced invoice management
 4. **Gmail Integration** - Email thread management
 5. **AI Resume Generation** - Intelligent customer insights
 6. **Comprehensive Documentation** - 3,830+ linjer guides
 
 ### **Technical Excellence**
+
 - **Type Safety** - Complete tRPC og TypeScript integration
-- **Modern Architecture** - React 19, latest dependencies  
+- **Modern Architecture** - React 19, latest dependencies
 - **Database Design** - Proper relations og indexes
 - **UI/UX Quality** - Professional shadcn/ui components
 - **Mobile Support** - Responsive breakpoints og touch targets
 
 ### **Business Value**
+
 - **360° Customer View** - All data på ét sted
 - **Automated Sync** - No manual data entry
 - **AI Insights** - Intelligent customer analysis
@@ -227,18 +250,21 @@ const insertId = await db.insert(customerProfiles).values(data);
 ## 🚀 **Success Criteria for Cursor**
 
 ### **Phase 1: Setup (This Weekend)**
+
 - [ ] TypeScript errors resolved (0 errors)
 - [ ] Environment configured med API keys
 - [ ] Development server running stable
 - [ ] Customer Profile system tested og functional
 
-### **Phase 2: Integration (Next Week)**  
+### **Phase 2: Integration (Next Week)**
+
 - [ ] Billy API fully connected og tested
 - [ ] Gmail API functional med OAuth
 - [ ] AI resume generation working
 - [ ] Mobile layout tested på real devices
 
 ### **Phase 3: Enhancement (Next Month)**
+
 - [ ] Customer Chat implementation complete
 - [ ] Advanced AI features added
 - [ ] Performance optimized
@@ -249,17 +275,20 @@ const insertId = await db.insert(customerProfiles).values(data);
 ## 💡 **Tips for Cursor IDE Development**
 
 ### **AI Assistance**
+
 - Reference `docs/CURSOR_RULES.md` for project-specific patterns
 - Use TypeScript strict mode - AI gets better suggestions
 - Reference existing component patterns for consistency
 
 ### **Debugging**
+
 - Use `console.log` liberally for development
 - Check Network tab for tRPC API calls
 - Use React DevTools for component state
 
-### **Testing** 
-- Test Customer Profile tabs extensively  
+### **Testing**
+
+- Test Customer Profile tabs extensively
 - Verify responsive design på different screen sizes
 - Test API integrations med real data when possible
 
@@ -268,12 +297,14 @@ const insertId = await db.insert(customerProfiles).values(data);
 ## 📞 **Support & Next Steps**
 
 **If stuck:**
+
 1. **Check documentation** i docs/ folder (3,830+ linjer)
 2. **Review GitHub** https://github.com/TekupDK/tekup-friday
-3. **Reference migration docs** i parent directory  
+3. **Reference migration docs** i parent directory
 4. **Test API endpoints** via browser dev tools
 
 **Contact:**
+
 - **Repository:** TekupDK/tekup-friday
 - **Local Path:** `C:\Users\empir\Tekup\services\tekup-ai-v2/`
 
