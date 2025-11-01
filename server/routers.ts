@@ -19,7 +19,8 @@ import {
   updateTaskStatus,
   trackEvent,
 } from "./db";
-import { routeAI } from "./ai-router";
+import { routeAI, type PendingAction } from "./ai-router";
+import { parseIntent, executeAction } from "./intent-actions";
 import {
   listGmailThreads,
   getGmailThread,
@@ -67,14 +68,40 @@ export const appRouter = router({
       const userMessage = await createMessage({ conversationId: input.conversationId, role: "user", content: input.content, attachments: input.attachments });
       const messages = await getConversationMessages(input.conversationId);
       const aiMessages = messages.map((m) => ({ role: m.role as "user" | "assistant" | "system", content: m.content }));
-      const aiResponse = await routeAI({ messages: aiMessages, taskType: "chat", userId: ctx.user.id, preferredModel: input.model });
+      const aiResponse = await routeAI({ messages: aiMessages, taskType: "chat", userId: ctx.user.id, preferredModel: input.model, requireApproval: true });
       const assistantMessage = await createMessage({ conversationId: input.conversationId, role: "assistant", content: aiResponse.content, model: aiResponse.model });
       await trackEvent({ userId: ctx.user.id, eventType: "message_sent", eventData: { conversationId: input.conversationId } });
-      return { userMessage, assistantMessage };
+      return { userMessage, assistantMessage, pendingAction: aiResponse.pendingAction };
     }),
     updateTitle: protectedProcedure.input(z.object({ conversationId: z.number(), title: z.string() })).mutation(async ({ input }) => {
       await updateConversationTitle(input.conversationId, input.title);
       return { success: true };
+    }),
+    executeAction: protectedProcedure.input(z.object({ conversationId: z.number(), actionId: z.string(), actionType: z.string(), actionParams: z.record(z.any()) })).mutation(async ({ ctx, input }) => {
+      // Execute the approved action
+      const intent = { intent: input.actionType as any, params: input.actionParams, confidence: 1.0 };
+      const actionResult = await executeAction(intent, ctx.user.id);
+      
+      // Create system message with action result
+      const resultMessage = await createMessage({
+        conversationId: input.conversationId,
+        role: "system",
+        content: `[Action Executed] ${actionResult.success ? "Success" : "Failed"}: ${actionResult.message}${actionResult.data ? "\nData: " + JSON.stringify(actionResult.data, null, 2) : ""}${actionResult.error ? "\nError: " + actionResult.error : ""}`,
+      });
+      
+      // Get AI response acknowledging the action
+      const messages = await getConversationMessages(input.conversationId);
+      const aiMessages = messages.map((m) => ({ role: m.role as "user" | "assistant" | "system", content: m.content }));
+      const aiResponse = await routeAI({ messages: aiMessages, taskType: "chat", userId: ctx.user.id, requireApproval: false });
+      
+      const assistantMessage = await createMessage({
+        conversationId: input.conversationId,
+        role: "assistant",
+        content: aiResponse.content,
+        model: aiResponse.model,
+      });
+      
+      return { actionResult, assistantMessage };
     }),
   }),
 

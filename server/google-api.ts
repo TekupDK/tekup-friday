@@ -25,16 +25,25 @@ const SCOPES = [
 /**
  * Create authenticated JWT client with domain-wide delegation
  */
-function getAuthClient(): JWT {
-  if (!SERVICE_ACCOUNT_KEY) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY environment variable is not set');
-  }
-
+async function getAuthClient(): Promise<JWT> {
+  // Try to load from JSON file first
   let credentials;
+  
   try {
-    credentials = JSON.parse(SERVICE_ACCOUNT_KEY);
+    const { readFileSync, existsSync } = await import('fs');
+    const { join } = await import('path');
+    const credentialsPath = join(process.cwd(), 'google-service-account.json');
+    
+    if (existsSync(credentialsPath)) {
+      credentials = JSON.parse(readFileSync(credentialsPath, 'utf8'));
+    } else if (SERVICE_ACCOUNT_KEY) {
+      credentials = JSON.parse(SERVICE_ACCOUNT_KEY);
+    } else {
+      throw new Error('Google Service Account credentials not found');
+    }
   } catch (error) {
-    throw new Error('Invalid GOOGLE_SERVICE_ACCOUNT_KEY format. Must be valid JSON.');
+    console.error('Error loading Google Service Account credentials:', error);
+    throw new Error('Invalid Google Service Account configuration');
   }
 
   const client = new JWT({
@@ -75,7 +84,7 @@ export async function searchGmailThreads(params: {
   maxResults?: number;
 }): Promise<GmailThread[]> {
   try {
-    const auth = getAuthClient();
+    const auth = await getAuthClient();
     const gmail = google.gmail({ version: 'v1', auth });
 
     const response = await gmail.users.threads.list({
@@ -149,7 +158,7 @@ export async function searchGmailThreads(params: {
  */
 export async function getGmailThread(threadId: string): Promise<GmailThread | null> {
   try {
-    const auth = getAuthClient();
+    const auth = await getAuthClient();
     const gmail = google.gmail({ version: 'v1', auth });
 
     const threadDetail = await gmail.users.threads.get({
@@ -208,7 +217,7 @@ export async function createGmailDraft(params: {
   body: string;
 }): Promise<{ id: string; message: string }> {
   try {
-    const auth = getAuthClient();
+    const auth = await getAuthClient();
     const gmail = google.gmail({ version: 'v1', auth });
 
     // Create email in RFC 2822 format
@@ -263,7 +272,7 @@ export async function listCalendarEvents(params: {
   maxResults?: number;
 }): Promise<CalendarEvent[]> {
   try {
-    const auth = getAuthClient();
+    const auth = await getAuthClient();
     const calendar = google.calendar({ version: 'v3', auth });
 
     const response = await calendar.events.list({
@@ -305,7 +314,7 @@ export async function createCalendarEvent(params: {
   location?: string;
 }): Promise<CalendarEvent> {
   try {
-    const auth = getAuthClient();
+    const auth = await getAuthClient();
     const calendar = google.calendar({ version: 'v3', auth });
 
     // CRITICAL: NO attendees parameter!
