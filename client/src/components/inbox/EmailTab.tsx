@@ -8,11 +8,27 @@ import { useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Streamdown } from "streamdown";
 
+interface EmailMessage {
+  id: string;
+  threadId: string;
+  subject: string;
+  from: string;
+  to: string;
+  date: string;
+  internalDate?: number;
+  body: string;
+  snippet: string;
+  unread: boolean;
+  labels: string[];
+  hasAttachment: boolean;
+  sender: string;
+}
+
 export default function EmailTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["TODAY", "YESTERDAY", "LAST_7_DAYS"]));
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
-  
+
   const { data: emails, isLoading, isFetching, refetch } = trpc.inbox.email.list.useQuery(
     { maxResults: 50 },
     {
@@ -21,9 +37,53 @@ export default function EmailTab() {
     }
   );
 
+  // Transform GmailThread[] to flat message list for display
+  const emailMessages = useMemo<EmailMessage[]>(() => {
+    if (!emails) return [];
+
+    // Flatten threads into messages, using the latest message from each thread
+    return emails.flatMap((thread: any): EmailMessage[] => {
+      if (!thread.messages || thread.messages.length === 0) {
+        // If no messages, create a synthetic message from thread data
+        return [{
+          id: thread.id,
+          threadId: thread.id,
+          subject: 'No Subject',
+          from: '',
+          to: '',
+          date: new Date().toISOString(),
+          body: thread.snippet || '',
+          snippet: thread.snippet || '',
+          unread: false,
+          labels: [] as string[],
+          hasAttachment: false,
+          sender: '',
+        }];
+      }
+
+      // Use the latest message from the thread
+      const lastMessage = thread.messages[thread.messages.length - 1];
+      return [{
+        id: lastMessage.id || thread.id,
+        threadId: thread.id,
+        subject: lastMessage.subject || 'No Subject',
+        from: lastMessage.from || '',
+        to: lastMessage.to || '',
+        date: lastMessage.date || new Date().toISOString(),
+        internalDate: lastMessage.date ? new Date(lastMessage.date).getTime() : Date.now(),
+        body: lastMessage.body || '',
+        snippet: thread.snippet || lastMessage.body?.substring(0, 100) || '',
+        unread: false, // Gmail API doesn't provide this in thread format
+        labels: [] as string[], // Gmail API doesn't provide this in thread format
+        hasAttachment: false, // Would need to check payload for attachments
+        sender: lastMessage.from || '', // Alias for from
+      }];
+    });
+  }, [emails]);
+
   // Group emails by time period
   const groupedEmails = useMemo(() => {
-    if (!emails) return { TODAY: [], YESTERDAY: [], LAST_7_DAYS: [] };
+    if (!emailMessages || emailMessages.length === 0) return { TODAY: [], YESTERDAY: [], LAST_7_DAYS: [] };
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -32,15 +92,15 @@ export default function EmailTab() {
     const last7Days = new Date(today);
     last7Days.setDate(last7Days.getDate() - 7);
 
-    const groups: Record<string, any[]> = {
+    const groups: Record<string, EmailMessage[]> = {
       TODAY: [],
       YESTERDAY: [],
       LAST_7_DAYS: [],
     };
 
-    emails.forEach((email: any) => {
-      const emailDate = new Date(email.internalDate || email.date);
-      
+    emailMessages.forEach((email: EmailMessage) => {
+      const emailDate = new Date(email.internalDate ? new Date(email.internalDate) : email.date);
+
       if (emailDate >= today) {
         groups.TODAY.push(email);
       } else if (emailDate >= yesterday) {
@@ -51,7 +111,7 @@ export default function EmailTab() {
     });
 
     return groups;
-  }, [emails]);
+  }, [emailMessages]);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => {
@@ -77,8 +137,8 @@ export default function EmailTab() {
 
   // If email is selected, show detail view
   if (selectedEmailId) {
-    const selectedEmail = emails?.find((e: any) => e.id === selectedEmailId);
-    
+    const selectedEmail = emailMessages.find((e: EmailMessage) => e.id === selectedEmailId);
+
     if (!selectedEmail) {
       setSelectedEmailId(null);
       return null;
@@ -108,7 +168,7 @@ export default function EmailTab() {
           <div className="space-y-4">
             {/* Subject */}
             <h2 className="text-2xl font-semibold">{selectedEmail.subject}</h2>
-            
+
             {/* From/To */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
@@ -177,7 +237,7 @@ export default function EmailTab() {
       <div className="space-y-6">
         {Object.entries(groupedEmails).map(([section, sectionEmails]) => {
           if (sectionEmails.length === 0) return null;
-          
+
           const isExpanded = expandedSections.has(section);
           const sectionTitle = section.replace(/_/g, ' ');
 
@@ -196,9 +256,9 @@ export default function EmailTab() {
               {/* Email List */}
               {isExpanded && (
                 <div className="space-y-2 ml-6">
-                  {sectionEmails.map((email: any) => (
-                    <Card 
-                      key={email.id} 
+                  {sectionEmails.map((email: EmailMessage) => (
+                    <Card
+                      key={email.id}
                       className="p-4 hover:bg-accent/50 cursor-pointer transition-colors"
                       onClick={() => setSelectedEmailId(email.id)}
                     >
@@ -227,7 +287,7 @@ export default function EmailTab() {
           );
         })}
 
-        {emails && emails.length === 0 && (
+        {emailMessages && emailMessages.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>No emails found</p>

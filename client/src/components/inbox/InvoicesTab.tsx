@@ -11,7 +11,7 @@ import { Streamdown } from "streamdown";
 
 /**
  * InvoicesTab - Displays and manages Billy.dk invoices
- * 
+ *
  * Integration: Uses Billy-mcp By Tekup (TekupDK/tekup-billy)
  * - Base URL: https://tekup-billy-production.up.railway.app
  * - API Version: 2.0.0
@@ -37,39 +37,39 @@ export default function InvoicesTab() {
   // Filter invoices based on search and status
   const filteredInvoices = useMemo(() => {
     if (!invoices) return [];
-    
+
     return invoices.filter((invoice: any) => {
-      const matchesSearch = 
+      const matchesSearch =
         searchQuery === "" ||
         invoice.invoiceNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         invoice.contactId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         invoice.id?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesStatus = 
-        statusFilter === "all" || 
+
+      const matchesStatus =
+        statusFilter === "all" ||
         invoice.state === statusFilter;
-      
+
       return matchesSearch && matchesStatus;
     });
   }, [invoices, searchQuery, statusFilter]);
 
   const handleFeedback = async (rating: 'up' | 'down') => {
     if (!selectedInvoice) return;
-    
+
     setFeedbackGiven(rating);
-    
+
     // Show comment input for negative feedback
     if (rating === 'down') {
       setShowCommentInput(true);
       return;
     }
-    
+
     try {
       await submitFeedbackMutation.mutateAsync({
         invoiceId: selectedInvoice.id,
         rating,
         analysis: aiAnalysis,
-        comment: feedbackComment,
+        ...(feedbackComment && { comment: feedbackComment }),
       });
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -78,13 +78,13 @@ export default function InvoicesTab() {
 
   const submitFeedbackWithComment = async () => {
     if (!selectedInvoice || !feedbackGiven) return;
-    
+
     try {
       await submitFeedbackMutation.mutateAsync({
         invoiceId: selectedInvoice.id,
         rating: feedbackGiven,
         analysis: aiAnalysis,
-        comment: feedbackComment,
+        ...(feedbackComment && { comment: feedbackComment }),
       });
       setShowCommentInput(false);
     } catch (error) {
@@ -111,16 +111,16 @@ export default function InvoicesTab() {
 
     // Create CSV content with categorization
     const headers = ["Invoice Number", "Customer", "Status", "Category", "Priority", "Entry Date", "Payment Terms", "AI Summary", "Recommendations"];
-    
+
     // Extract recommendations from AI analysis (simple text extraction)
-    const recommendations = analysis.split('\n').filter(line => 
-      line.toLowerCase().includes('recommend') || 
+    const recommendations = analysis.split('\n').filter(line =>
+      line.toLowerCase().includes('recommend') ||
       line.toLowerCase().includes('action') ||
       line.toLowerCase().includes('follow-up')
     ).join(' | ');
-    
+
     const summary = analysis.replace(/[\n\r]/g, ' ').substring(0, 200) + '...';
-    
+
     const row = [
       invoice.invoiceNo || invoice.id.slice(0, 8),
       invoice.contactId,
@@ -132,12 +132,12 @@ export default function InvoicesTab() {
       `"${summary}"`,
       `"${recommendations || 'See full analysis'}"`
     ];
-    
+
     const csvContent = [
       headers.join(','),
       row.join(',')
     ].join('\n');
-    
+
     // Download CSV
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -275,7 +275,7 @@ Please analyze this invoice and provide:
                     Customer: {invoice.contactId}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Date: {new Date(invoice.entryDate).toLocaleDateString('da-DK')} • 
+                    Date: {new Date(invoice.entryDate).toLocaleDateString('da-DK')} •
                     Payment terms: {invoice.paymentTermsDays} days
                   </p>
                 </div>
@@ -325,7 +325,7 @@ Please analyze this invoice and provide:
             <DialogDescription>
               {selectedInvoice && (
                 <>
-                  Invoice {selectedInvoice.invoiceNo || selectedInvoice.id.slice(0, 8)} • 
+                  Invoice {selectedInvoice.invoiceNo || selectedInvoice.id.slice(0, 8)} •
                   {selectedInvoice.contactId}
                 </>
               )}
@@ -375,7 +375,7 @@ Please analyze this invoice and provide:
                       Export to CSV
                     </Button>
                   </div>
-                  
+
                   {/* Feedback Comment Input */}
                   {showCommentInput && (
                     <div className="space-y-2">
