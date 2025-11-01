@@ -285,3 +285,35 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Search by conversation title, content, or date
 - [ ] Highlight search results
 - [ ] Add keyboard shortcut (Cmd/Ctrl+K)
+
+
+## 🎯 MANUS AI SUGGESTIONS - Billy.dk Features
+
+### Billy Invoice Display (Right Panel)
+- [x] Implement Billy.dk invoice fetching using billy-mcp v2.0.0
+- [x] Display invoices in InvoicesTab with proper formatting
+- [x] Show invoice status, amount, customer, date
+- [x] Handle pagination (v2.0.0 auto-pagination)
+- [x] Add loading states and error handling
+
+### Search and Filter for Invoices
+- [x] Add search input for invoice number, customer name
+- [x] Add filter dropdown for invoice status (draft, approved, sent, paid, overdue)
+- [x] Implement client-side filtering of fetched invoices
+- [x] Add "Clear filters" button
+- [ ] Add date range filter (optional enhancement)
+
+### AI Invoice Analysis
+- [x] Add "Analyze Invoice" button for each invoice
+- [x] Send invoice data to AI for analysis
+- [x] Display AI summary of invoice contents
+- [x] Show insights: payment status, overdue warnings, anomalies
+- [x] Format AI response in readable markdown
+
+### Documentation Updates to v2.0.0
+- [x] Update BILLY_INTEGRATION.md with v2.0.0 specs
+- [x] Update server/billy.ts header comment
+- [x] Update InvoicesTab.tsx component comment
+- [x] Reference correct base URL: https://tekup-billy-production.up.railway.app
+- [x] Update version references to 2.0.0
+- [x] Fix branding: "Billy-mcp By Tekup" (not "Tekup-Billy")

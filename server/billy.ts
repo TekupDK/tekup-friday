@@ -1,11 +1,16 @@
 /**
- * Billy API Client (billy-mcp by TekupDK)
- * Handles invoice, customer, and product management via Billy.dk API
+ * Billy.dk API Integration via Billy-mcp By Tekup
  * 
- * This integration uses the billy-mcp server from TekupDK/tekup-billy repository
- * which provides a standardized interface to Billy.dk's accounting API.
+ * Repository: TekupDK/tekup-billy (apps/production/tekup-billy)
+ * Server: Billy-mcp By Tekup v2.0.0
+ * Base URL: https://tekup-billy-production.up.railway.app
+ * Documentation: docs/integration/CHATGPT_INTEGRATION_GUIDE.md
  * 
- * Repository: https://github.com/TekupDK/tekup-billy
+ * Features:
+ * - Automatic pagination for all list operations
+ * - Enhanced type safety and error handling
+ * - Invoice, customer, and product management
+ * 
  * API Documentation: https://www.billy.dk/api
  */
 

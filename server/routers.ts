@@ -90,6 +90,18 @@ export const appRouter = router({
       await updateConversationTitle(input.conversationId, input.title);
       return { success: true };
     }),
+    analyzeInvoice: protectedProcedure.input(z.object({ invoiceData: z.string() })).mutation(async ({ input }) => {
+      // Use AI to analyze the invoice
+      const aiResponse = await routeAI({
+        messages: [
+          { role: "system", content: "You are a financial analyst expert. Analyze invoices and provide insights about payment status, completeness, anomalies, and recommendations." },
+          { role: "user", content: input.invoiceData },
+        ],
+        taskType: "data-analysis",
+        preferredModel: "gemini-2.5-flash",
+      });
+      return { analysis: aiResponse.content };
+    }),
     executeAction: protectedProcedure.input(z.object({ conversationId: z.number(), actionId: z.string(), actionType: z.string(), actionParams: z.record(z.string(), z.any()) })).mutation(async ({ ctx, input }) => {
       // Execute the approved action
       const intent = { intent: input.actionType as any, params: input.actionParams, confidence: 1.0 };
