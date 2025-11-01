@@ -1,6 +1,11 @@
 /**
- * Billy API Client
+ * Billy API Client (billy-mcp by TekupDK)
  * Handles invoice, customer, and product management via Billy.dk API
+ * 
+ * This integration uses the billy-mcp server from TekupDK/tekup-billy repository
+ * which provides a standardized interface to Billy.dk's accounting API.
+ * 
+ * Repository: https://github.com/TekupDK/tekup-billy
  * API Documentation: https://www.billy.dk/api
  */
 

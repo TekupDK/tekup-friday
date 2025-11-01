@@ -3,6 +3,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText } from "lucide-react";
 
+/**
+ * InvoicesTab Component
+ * 
+ * Displays invoices from Billy.dk via billy-mcp (TekupDK/tekup-billy)
+ * Billy-MCP provides a standardized MCP interface to Billy.dk's accounting API
+ */
 export default function InvoicesTab() {
   const { data: invoices, isLoading } = trpc.inbox.invoices.list.useQuery();
 
