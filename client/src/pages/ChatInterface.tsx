@@ -47,15 +47,24 @@ export default function ChatInterface() {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="border-b border-border px-6 py-4 flex items-center justify-between">
+      <header className="border-b border-border px-6 py-4 flex items-center justify-between bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">F</span>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <span className="text-white font-bold text-base">F</span>
           </div>
-          <h1 className="text-xl font-semibold">Friday</h1>
+          <div>
+            <h1 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Friday</h1>
+            <p className="text-xs text-muted-foreground">AI Assistant for TekupDK</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">{user?.name || user?.email}</span>
+          <div className="text-right">
+            <p className="text-sm font-medium">{user?.name || 'User'}</p>
+            <p className="text-xs text-muted-foreground">{user?.email}</p>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="text-primary font-semibold text-sm">{user?.name?.charAt(0) || 'U'}</span>
+          </div>
         </div>
       </header>
 

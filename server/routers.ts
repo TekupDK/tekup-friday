@@ -21,16 +21,16 @@ import {
 } from "./db";
 import { routeAI, type PendingAction } from "./ai-router";
 import { parseIntent, executeAction } from "./intent-actions";
+import { generateConversationTitle } from "./title-generator";
 import {
-  listGmailThreads,
+  searchGmailThreads,
   getGmailThread,
-  searchGmail,
   createGmailDraft,
   listCalendarEvents,
   createCalendarEvent,
   checkCalendarAvailability,
-  findFreeTimeSlots,
-} from "./mcp";
+  findFreeSlots,
+} from "./google-api";
 import {
   getCustomers,
   getInvoices as getBillyInvoices,
@@ -67,6 +67,19 @@ export const appRouter = router({
     sendMessage: protectedProcedure.input(z.object({ conversationId: z.number(), content: z.string(), model: z.enum(["gemini-2.5-flash", "claude-3-5-sonnet", "gpt-4o", "manus-ai"]).optional(), attachments: z.array(z.object({ url: z.string(), name: z.string(), type: z.string() })).optional() })).mutation(async ({ ctx, input }) => {
       const userMessage = await createMessage({ conversationId: input.conversationId, role: "user", content: input.content, attachments: input.attachments });
       const messages = await getConversationMessages(input.conversationId);
+      
+      // Check if this is the first message and conversation has no title
+      const conversation = await getConversation(input.conversationId);
+      if (conversation && messages.length === 1 && (!conversation.title || conversation.title === "New Conversation")) {
+        // Generate title asynchronously (non-blocking)
+        generateConversationTitle(input.content, input.model).then(async (title) => {
+          await updateConversationTitle(input.conversationId, title);
+          console.log(`[Chat] Auto-generated title for conversation ${input.conversationId}: ${title}`);
+        }).catch((error) => {
+          console.error(`[Chat] Title generation failed for conversation ${input.conversationId}:`, error);
+        });
+      }
+      
       const aiMessages = messages.map((m) => ({ role: m.role as "user" | "assistant" | "system", content: m.content }));
       const aiResponse = await routeAI({ messages: aiMessages, taskType: "chat", userId: ctx.user.id, preferredModel: input.model, requireApproval: true });
       const assistantMessage = await createMessage({ conversationId: input.conversationId, role: "assistant", content: aiResponse.content, model: aiResponse.model });
@@ -77,7 +90,7 @@ export const appRouter = router({
       await updateConversationTitle(input.conversationId, input.title);
       return { success: true };
     }),
-    executeAction: protectedProcedure.input(z.object({ conversationId: z.number(), actionId: z.string(), actionType: z.string(), actionParams: z.record(z.any()) })).mutation(async ({ ctx, input }) => {
+    executeAction: protectedProcedure.input(z.object({ conversationId: z.number(), actionId: z.string(), actionType: z.string(), actionParams: z.record(z.string(), z.any()) })).mutation(async ({ ctx, input }) => {
       // Execute the approved action
       const intent = { intent: input.actionType as any, params: input.actionParams, confidence: 1.0 };
       const actionResult = await executeAction(intent, ctx.user.id);
@@ -108,9 +121,9 @@ export const appRouter = router({
   // Inbox modules
   inbox: router({
     email: router({
-      list: protectedProcedure.input(z.object({ maxResults: z.number().optional(), query: z.string().optional() })).query(async ({ input }) => listGmailThreads({ maxResults: input.maxResults || 20, query: input.query })),
+      list: protectedProcedure.input(z.object({ maxResults: z.number().optional(), query: z.string().optional() })).query(async ({ input }) => searchGmailThreads({ query: input.query || 'in:inbox', maxResults: input.maxResults || 20 })),
       get: protectedProcedure.input(z.object({ threadId: z.string() })).query(async ({ input }) => getGmailThread(input.threadId)),
-      search: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => searchGmail(input.query)),
+      search: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => searchGmailThreads({ query: input.query, maxResults: 50 })),
       createDraft: protectedProcedure.input(z.object({ to: z.string(), subject: z.string(), body: z.string(), cc: z.string().optional(), bcc: z.string().optional() })).mutation(async ({ input }) => createGmailDraft(input)),
     }),
     invoices: router({
@@ -121,7 +134,7 @@ export const appRouter = router({
       list: protectedProcedure.input(z.object({ timeMin: z.string().optional(), timeMax: z.string().optional(), maxResults: z.number().optional() })).query(async ({ input }) => listCalendarEvents(input)),
       create: protectedProcedure.input(z.object({ summary: z.string(), description: z.string().optional(), start: z.string(), end: z.string(), location: z.string().optional() })).mutation(async ({ input }) => createCalendarEvent(input)),
       checkAvailability: protectedProcedure.input(z.object({ start: z.string(), end: z.string() })).query(async ({ input }) => checkCalendarAvailability(input)),
-      findFreeSlots: protectedProcedure.input(z.object({ date: z.string(), duration: z.number(), workingHours: z.object({ start: z.number(), end: z.number() }).optional() })).query(async ({ input }) => findFreeTimeSlots(input)),
+      findFreeSlots: protectedProcedure.input(z.object({ startDate: z.string(), endDate: z.string(), durationHours: z.number() })).query(async ({ input }) => findFreeSlots(input)),
     }),
     leads: router({
       list: protectedProcedure.query(async ({ ctx }) => getUserLeads(ctx.user.id)),
@@ -157,7 +170,7 @@ export const appRouter = router({
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - input.days);
       const query = `after:${daysAgo.toISOString().split("T")[0]}`;
-      return searchGmail(query);
+      return searchGmailThreads({ query, maxResults: 100 });
     }),
     getCustomers: protectedProcedure.query(async () => getCustomers()),
     searchCustomer: protectedProcedure.input(z.object({ email: z.string() })).query(async ({ input }) => searchCustomerByEmail(input.email)),

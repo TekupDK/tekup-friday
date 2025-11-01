@@ -31,6 +31,21 @@ export default function ChatPanel() {
     { enabled: !!selectedConversationId }
   );
 
+  // Poll for title updates when conversation has no title
+  useEffect(() => {
+    if (!conversationData?.conversation) return;
+    
+    const needsTitleUpdate = !conversationData.conversation.title || conversationData.conversation.title === "New Conversation";
+    if (!needsTitleUpdate) return;
+
+    const interval = setInterval(() => {
+      refetchMessages();
+      refetchConversations();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [conversationData?.conversation, refetchMessages, refetchConversations]);
+
   const createConversation = trpc.chat.create.useMutation({
     onSuccess: (data) => {
       setSelectedConversationId(data.id);
@@ -154,7 +169,7 @@ export default function ChatPanel() {
     <>
       <div className="h-full flex">
         {/* Conversation List Sidebar */}
-        <div className="w-64 border-r border-border flex flex-col">
+        <div className="w-64 border-r border-border flex flex-col shrink-0">
           <div className="p-4 border-b border-border">
             <Button
               onClick={() => createConversation.mutate({ title: "New Conversation" })}
@@ -171,15 +186,21 @@ export default function ChatPanel() {
                 <button
                   key={conv.id}
                   onClick={() => setSelectedConversationId(conv.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
                     selectedConversationId === conv.id
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-accent/50"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "hover:bg-accent/50 hover:shadow-sm"
                   }`}
                 >
-                  <div className="font-medium truncate">{conv.title || "New Conversation"}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(conv.updatedAt).toLocaleDateString()}
+                  <div className="font-medium truncate">
+                    {conv.title && conv.title !== "New Conversation" ? conv.title : (
+                      <span className="text-muted-foreground italic">
+                        Ny samtale {new Date(conv.createdAt).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs opacity-70">
+                    {new Date(conv.updatedAt).toLocaleDateString('da-DK', { day: '2-digit', month: 'short' })}
                   </div>
                 </button>
               ))}
@@ -188,47 +209,50 @@ export default function ChatPanel() {
         </div>
 
         {/* Chat Messages Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           {selectedConversationId ? (
             <>
               {/* Messages */}
-              <ScrollArea className="flex-1 p-6" ref={scrollRef}>
+              <div className="flex-1 overflow-y-auto p-6" ref={scrollRef}>
                 <div className="space-y-6 max-w-3xl mx-auto">
-                  {conversationData?.messages.map((message) => (
+                  {conversationData?.messages.map((message, index) => (
                     <div
                       key={message.id}
-                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div
-                        className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                        className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
                           message.role === "user"
                             ? "bg-primary text-primary-foreground"
                             : message.role === "system"
-                            ? "bg-muted/50 text-muted-foreground text-xs"
-                            : "bg-muted"
+                            ? "bg-muted/50 text-muted-foreground text-xs border border-border"
+                            : "bg-muted border border-border"
                         }`}
                       >
                         {message.role === "assistant" ? (
-                          <Streamdown>{message.content}</Streamdown>
+                          <div className="prose prose-sm max-w-none dark:prose-invert">
+                            <Streamdown>{message.content}</Streamdown>
+                          </div>
                         ) : (
-                          <p className="whitespace-pre-wrap">{message.content}</p>
+                          <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
                         )}
                       </div>
                     </div>
                   ))}
                   {sendMessage.isPending && (
-                    <div className="flex justify-start">
-                      <div className="bg-muted rounded-lg px-4 py-3">
-                        <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-100"></div>
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce delay-200"></div>
+                    <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="bg-muted border border-border rounded-2xl px-4 py-3 shadow-sm">
+                        <div className="flex gap-1.5">
+                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
 
               {/* Input Area */}
               <div className="border-t border-border p-4">

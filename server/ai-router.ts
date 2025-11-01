@@ -37,7 +37,7 @@ export interface AIRouterOptions {
 
 export interface PendingAction {
   id: string;
-  type: string;
+  type: 'create_lead' | 'create_task' | 'book_meeting' | 'create_invoice' | 'search_gmail' | 'request_flytter_photos' | 'job_completion';
   params: Record<string, any>;
   impact: string;
   preview: string;
@@ -161,7 +161,7 @@ function generateActionImpact(intentType: string, params: Record<string, any>): 
 function createPendingAction(intent: ReturnType<typeof parseIntent>): PendingAction {
   return {
     id: randomBytes(16).toString('hex'),
-    type: intent.intent,
+    type: intent.intent as PendingAction['type'],
     params: intent.params,
     impact: generateActionImpact(intent.intent, intent.params),
     preview: generateActionPreview(intent.intent, intent.params),
