@@ -168,8 +168,8 @@ export default function ChatPanel() {
   return (
     <>
       <div className="h-full flex">
-        {/* Conversation List Sidebar */}
-        <div className="w-64 border-r border-border flex flex-col shrink-0">
+        {/* Conversation List Sidebar - Hidden on mobile */}
+        <div className="hidden sm:flex w-48 md:w-64 border-r border-border flex-col shrink-0">
           <div className="p-4 border-b border-border">
             <Button
               onClick={() => createConversation.mutate({ title: "New Conversation" })}
@@ -209,11 +209,11 @@ export default function ChatPanel() {
         </div>
 
         {/* Chat Messages Area */}
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 w-full">
           {selectedConversationId ? (
             <>
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-6" ref={scrollRef}>
+              <div className="flex-1 overflow-y-auto p-3 sm:p-6" ref={scrollRef}>
                 <div className="space-y-6 max-w-3xl mx-auto">
                   {conversationData?.messages.map((message, index) => (
                     <div
@@ -255,7 +255,7 @@ export default function ChatPanel() {
               </div>
 
               {/* Input Area */}
-              <div className="border-t border-border p-4">
+              <div className="border-t border-border p-3 sm:p-4">
                 <div className="max-w-3xl mx-auto space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Bot className="w-4 h-4" />

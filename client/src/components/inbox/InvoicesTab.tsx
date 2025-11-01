@@ -19,7 +19,10 @@ import { Streamdown } from "streamdown";
  * - Features: Automatic pagination, search, filter, AI analysis
  */
 export default function InvoicesTab() {
-  const { data: invoices, isLoading } = trpc.inbox.invoices.list.useQuery();
+  const { data: invoices, isLoading, isFetching } = trpc.inbox.invoices.list.useQuery(undefined, {
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchIntervalInBackground: true,
+  });
   const analyzeInvoiceMutation = trpc.chat.analyzeInvoice.useMutation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -27,6 +30,8 @@ export default function InvoicesTab() {
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
   const [analyzingInvoice, setAnalyzingInvoice] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<'up' | 'down' | null>(null);
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const [showCommentInput, setShowCommentInput] = useState(false);
   const submitFeedbackMutation = trpc.chat.submitAnalysisFeedback.useMutation();
 
   // Filter invoices based on search and status
@@ -53,20 +58,59 @@ export default function InvoicesTab() {
     
     setFeedbackGiven(rating);
     
+    // Show comment input for negative feedback
+    if (rating === 'down') {
+      setShowCommentInput(true);
+      return;
+    }
+    
     try {
       await submitFeedbackMutation.mutateAsync({
         invoiceId: selectedInvoice.id,
         rating,
         analysis: aiAnalysis,
+        comment: feedbackComment,
       });
     } catch (error) {
       console.error('Error submitting feedback:', error);
     }
   };
 
+  const submitFeedbackWithComment = async () => {
+    if (!selectedInvoice || !feedbackGiven) return;
+    
+    try {
+      await submitFeedbackMutation.mutateAsync({
+        invoiceId: selectedInvoice.id,
+        rating: feedbackGiven,
+        analysis: aiAnalysis,
+        comment: feedbackComment,
+      });
+      setShowCommentInput(false);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+    }
+  };
+
   const exportToCSV = (invoice: any, analysis: string) => {
-    // Create CSV content
-    const headers = ["Invoice Number", "Customer", "Status", "Entry Date", "Payment Terms", "AI Summary", "Recommendations"];
+    // Auto-categorize based on invoice state and AI analysis
+    const category = (() => {
+      if (invoice.state === 'overdue') return 'URGENT';
+      if (invoice.state === 'draft') return 'PENDING_REVIEW';
+      if (analysis.toLowerCase().includes('risk') || analysis.toLowerCase().includes('concern')) return 'ATTENTION_NEEDED';
+      if (analysis.toLowerCase().includes('good') || analysis.toLowerCase().includes('positive')) return 'HEALTHY';
+      return 'NORMAL';
+    })();
+
+    // Extract priority from analysis
+    const priority = (() => {
+      if (analysis.toLowerCase().includes('urgent') || invoice.state === 'overdue') return 'HIGH';
+      if (analysis.toLowerCase().includes('important') || invoice.state === 'approved') return 'MEDIUM';
+      return 'LOW';
+    })();
+
+    // Create CSV content with categorization
+    const headers = ["Invoice Number", "Customer", "Status", "Category", "Priority", "Entry Date", "Payment Terms", "AI Summary", "Recommendations"];
     
     // Extract recommendations from AI analysis (simple text extraction)
     const recommendations = analysis.split('\n').filter(line => 
@@ -81,6 +125,8 @@ export default function InvoicesTab() {
       invoice.invoiceNo || invoice.id.slice(0, 8),
       invoice.contactId,
       invoice.state,
+      category,
+      priority,
       new Date(invoice.entryDate).toLocaleDateString('da-DK'),
       `${invoice.paymentTermsDays} days`,
       `"${summary}"`,
@@ -296,37 +342,69 @@ Please analyze this invoice and provide:
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <Streamdown>{aiAnalysis}</Streamdown>
                 </div>
-                <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Was this analysis helpful?</span>
+                <div className="mt-4 pt-4 border-t space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Was this analysis helpful?</span>
+                      <Button
+                        variant={feedbackGiven === 'up' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleFeedback('up')}
+                        className="gap-1"
+                      >
+                        <ThumbsUp className="h-4 w-4" />
+                        {feedbackGiven === 'up' && 'Thanks!'}
+                      </Button>
+                      <Button
+                        variant={feedbackGiven === 'down' ? 'destructive' : 'outline'}
+                        size="sm"
+                        onClick={() => handleFeedback('down')}
+                        className="gap-1"
+                      >
+                        <ThumbsDown className="h-4 w-4" />
+                        {feedbackGiven === 'down' && 'Noted'}
+                      </Button>
+                    </div>
                     <Button
-                      variant={feedbackGiven === 'up' ? 'default' : 'outline'}
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleFeedback('up')}
-                      className="gap-1"
+                      onClick={() => exportToCSV(selectedInvoice, aiAnalysis)}
+                      className="gap-2"
                     >
-                      <ThumbsUp className="h-4 w-4" />
-                      {feedbackGiven === 'up' && 'Thanks!'}
-                    </Button>
-                    <Button
-                      variant={feedbackGiven === 'down' ? 'destructive' : 'outline'}
-                      size="sm"
-                      onClick={() => handleFeedback('down')}
-                      className="gap-1"
-                    >
-                      <ThumbsDown className="h-4 w-4" />
-                      {feedbackGiven === 'down' && 'Noted'}
+                      <Download className="h-4 w-4" />
+                      Export to CSV
                     </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => exportToCSV(selectedInvoice, aiAnalysis)}
-                    className="gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export to CSV
-                  </Button>
+                  
+                  {/* Feedback Comment Input */}
+                  {showCommentInput && (
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Tell us what could be improved... (optional)"
+                        value={feedbackComment}
+                        onChange={(e) => setFeedbackComment(e.target.value)}
+                        className="text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={submitFeedbackWithComment}
+                        >
+                          Submit Feedback
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setShowCommentInput(false);
+                            setFeedbackComment("");
+                          }}
+                        >
+                          Skip
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
