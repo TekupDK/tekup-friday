@@ -95,7 +95,7 @@ export default function ChatInterface() {
 
       {/* Main Content */}
       {/* Desktop: Split Panel */}
-      <div className="hidden md:flex flex-1 overflow-hidden">
+      <div className="hidden md:flex flex-1 overflow-hidden min-h-0">
         <ResizablePanelGroup direction="horizontal" className="flex-1">
           {/* Chat Panel (Left - 60%) */}
           <ResizablePanel defaultSize={60} minSize={40}>
@@ -112,7 +112,7 @@ export default function ChatInterface() {
       </div>
 
       {/* Mobile: Single Column */}
-      <div className="md:hidden flex-1 overflow-hidden">
+      <div className="flex md:hidden flex-1 overflow-hidden min-h-0">
         <ChatPanel />
       </div>
     </div>
