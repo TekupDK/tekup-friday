@@ -16,8 +16,8 @@ export default function InboxPanel({ activeTab, onTabChange }: InboxPanelProps) 
   return (
     <div className="h-full flex flex-col bg-muted/30">
       <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as any)} className="flex-1 flex flex-col">
-        <div className="border-b border-border px-4">
-          <TabsList className="w-full justify-start bg-transparent">
+        <div className="border-b border-border px-2 sm:px-4">
+          <TabsList className="w-full justify-start bg-transparent gap-1">
             <TabsTrigger value="email" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
               <span className="hidden sm:inline">Email</span>
@@ -42,19 +42,19 @@ export default function InboxPanel({ activeTab, onTabChange }: InboxPanelProps) 
         </div>
 
         <ScrollArea className="flex-1">
-          <TabsContent value="email" className="m-0 p-4">
+          <TabsContent value="email" className="m-0 p-3 sm:p-4">
             <EmailTab />
           </TabsContent>
-          <TabsContent value="invoices" className="m-0 p-4">
+          <TabsContent value="invoices" className="m-0 p-3 sm:p-4">
             <InvoicesTab />
           </TabsContent>
-          <TabsContent value="calendar" className="m-0 p-4">
+          <TabsContent value="calendar" className="m-0 p-3 sm:p-4">
             <CalendarTab />
           </TabsContent>
-          <TabsContent value="leads" className="m-0 p-4">
+          <TabsContent value="leads" className="m-0 p-3 sm:p-4">
             <LeadsTab />
           </TabsContent>
-          <TabsContent value="tasks" className="m-0 p-4">
+          <TabsContent value="tasks" className="m-0 p-3 sm:p-4">
             <TasksTab />
           </TabsContent>
         </ScrollArea>

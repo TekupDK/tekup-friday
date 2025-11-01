@@ -15,6 +15,13 @@
       "when": 1761990750966,
       "tag": "0001_brown_wasp",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1762011975698,
+      "tag": "0002_sweet_may_parker",
+      "breakpoints": true
     }
   ]
 }
