@@ -101,3 +101,88 @@
 - [ ] Test real-time chat functionality
 - [ ] Create user guide documentation
 - [ ] Test mobile responsiveness
+
+## New Requirements - System Prompts & Workflow Automation
+
+### Friday AI System Prompts
+- [ ] Implement main system prompt with Friday personality and core capabilities
+- [ ] Add email handling workflow (lead processing, qualification, quote sending)
+- [ ] Add Billy invoice management workflow with product IDs and pricing
+- [ ] Add calendar management with critical rules (no attendees, round hours)
+- [ ] Add conflict resolution and customer complaint handling
+- [ ] Add job completion workflow with checklist
+- [ ] Add quality control verification checklist
+- [ ] Implement multi-model routing logic (GPT-4o, Claude, Gemini)
+
+### Workflow Automation Features
+- [ ] Implement lead source detection (Rengøring.nu, Rengøring Aarhus, AdHelp)
+- [ ] Add photo request workflow for flytterengøring
+- [ ] Add duplicate quote prevention (search before sending)
+- [ ] Add calendar conflict checking before proposing times
+- [ ] Add overtime communication workflow (+1 hour rule)
+- [ ] Add job completion checklist automation
+- [ ] Add email label management (remove INBOX/IMPORTANT after completion)
+
+### Testing Requirements
+- [ ] Test chat with Danish prompts
+- [ ] Test email workflow with lead processing
+- [ ] Test Billy invoice creation workflow
+- [ ] Test calendar event creation (verify no attendees)
+- [ ] Test conflict resolution responses
+- [ ] Test job completion workflow
+- [ ] Test multi-model routing
+
+## Tool Calling Implementation
+
+### OpenAI Function Definitions
+- [x] Create tool definitions for Gmail operations (search, read, draft, send)
+- [x] Create tool definitions for Billy operations (list invoices, create invoice, search customers)
+- [x] Create tool definitions for Calendar operations (list events, create event, check availability, find slots)
+- [x] Create tool definitions for Lead operations (list, create, update score, update status)
+- [x] Create tool definitions for Task operations (list, create, update status)
+
+### Tool Handlers
+- [x] Implement Gmail tool handler that calls MCP functions
+- [x] Implement Billy tool handler that calls Billy API
+- [x] Implement Calendar tool handler that calls MCP functions
+- [x] Implement Lead tool handler that calls database functions
+- [x] Implement Task tool handler that calls database functions
+
+### AI Router Updates
+- [x] Add tool calling support to routeAI function
+- [x] Implement tool call processing loop
+- [x] Add tool call result formatting
+- [x] Update chat.sendMessage to handle tool calls
+- [ ] Add streaming support for tool calling responses
+
+## Intent-Based Action System (Replacing Tool Calling)
+
+### Intent Detection & Parsing
+- [ ] Create intent parser that analyzes user messages for actions
+- [ ] Identify action intents: create_lead, create_invoice, book_meeting, search_email, list_tasks
+- [ ] Extract parameters from natural language (navn, email, telefon, dato, tid, beløb, etc.)
+- [ ] Handle Danish language variations and synonyms
+
+### Direct Action Handlers
+- [ ] Implement createLeadAction - directly inserts into database
+- [ ] Implement createInvoiceAction - calls Billy API directly
+- [ ] Implement bookMeetingAction - calls Google Calendar MCP directly
+- [ ] Implement searchEmailAction - calls Gmail MCP directly
+- [ ] Implement listTasksAction - queries database directly
+- [ ] Add error handling and user-friendly error messages
+
+### AI Response with Action Results
+- [ ] After action execution, include results in AI context
+- [ ] Generate confirmation messages with action details
+- [ ] Handle partial failures gracefully
+- [ ] Add "action completed" indicators in chat
+
+### Workflow Testing
+- [ ] Test "Opret lead: Navn Peter, Email peter@test.dk, Telefon 12345678"
+- [ ] Test "Opret faktura til kunde X for 5000 kr"
+- [ ] Test "Book møde med Maria på tirsdag kl 14"
+- [ ] Test "Søg emails fra sidste uge"
+- [ ] Test "Vis alle mine opgaver"
+- [ ] Verify leads appear in Leads tab after creation
+- [ ] Verify invoices appear in Invoices tab after creation
+- [ ] Verify calendar events sync to Calendar tab

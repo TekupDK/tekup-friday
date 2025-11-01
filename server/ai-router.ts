@@ -1,38 +1,36 @@
 /**
  * AI Router
- * Intelligently routes requests to different AI models based on task type and context
- * Supports: OpenAI GPT-4o, Anthropic Claude, Google Gemini
+ * Routes requests to appropriate AI models and handles intent-based actions
  */
 
 import { invokeLLM, type Message } from "./_core/llm";
+import { getFridaySystemPrompt } from "./friday-prompts";
+import { parseIntent, executeAction, type ActionResult } from "./intent-actions";
 
-export type AIModel = "gpt-4o" | "gpt-4o-mini" | "claude-3.5" | "gemini-2.0";
+export type AIModel = 
+  | "gpt-4o" 
+  | "gpt-4o-mini" 
+  | "claude-3-5-sonnet" 
+  | "gemini-2.5-flash";
 
 export type TaskType =
-  | "chat" // General conversation
-  | "email-draft" // Email composition
-  | "invoice-create" // Invoice generation
-  | "calendar-check" // Calendar operations
-  | "lead-analysis" // Lead scoring and analysis
-  | "data-analysis" // Data processing and insights
-  | "code-generation"; // Code generation
+  | "chat"
+  | "email-draft"
+  | "invoice-create"
+  | "calendar-check"
+  | "lead-analysis"
+  | "data-analysis"
+  | "code-generation";
 
-interface AIRouterOptions {
+export interface AIRouterOptions {
   messages: Message[];
   taskType?: TaskType;
   model?: AIModel;
   stream?: boolean;
-  tools?: Array<{
-    type: "function";
-    function: {
-      name: string;
-      description: string;
-      parameters: Record<string, unknown>;
-    };
-  }>;
+  tools?: any[];
 }
 
-interface AIResponse {
+export interface AIResponse {
   content: string;
   model: AIModel;
   usage?: {
@@ -51,48 +49,101 @@ interface AIResponse {
  */
 function selectModelForTask(taskType: TaskType): AIModel {
   const modelMap: Record<TaskType, AIModel> = {
-    "chat": "gpt-4o-mini", // Fast and cost-effective for general chat
-    "email-draft": "gpt-4o", // Better at professional writing
-    "invoice-create": "gpt-4o", // Structured data generation
-    "calendar-check": "gpt-4o-mini", // Simple logic
-    "lead-analysis": "gpt-4o", // Complex analysis
-    "data-analysis": "gpt-4o", // Data processing
-    "code-generation": "gpt-4o", // Code quality
+    "chat": "gemini-2.5-flash", // Fast and cost-effective for general chat
+    "email-draft": "gemini-2.5-flash", // Good at professional writing
+    "invoice-create": "gemini-2.5-flash", // Structured data generation
+    "calendar-check": "gemini-2.5-flash", // Simple logic
+    "lead-analysis": "gemini-2.5-flash", // Complex analysis
+    "data-analysis": "gemini-2.5-flash", // Data processing
+    "code-generation": "gemini-2.5-flash", // Code quality
   };
 
-  return modelMap[taskType] || "gpt-4o-mini";
+  return modelMap[taskType] || "gemini-2.5-flash";
 }
 
 /**
- * Route AI request to the appropriate model
+ * Route AI request to the appropriate model with intent-based actions
  */
-export async function routeAI(options: AIRouterOptions): Promise<AIResponse> {
+export async function routeAI(options: AIRouterOptions & { userId?: number }): Promise<AIResponse> {
   const {
     messages,
     taskType = "chat",
     model: explicitModel,
-    stream = false,
-    tools,
+    userId,
   } = options;
 
   // Use explicit model if provided, otherwise select based on task type
   const selectedModel = explicitModel || selectModelForTask(taskType);
 
+  console.log(`[AI Router] Using model: ${selectedModel} for task: ${taskType}`);
+
+  // Get the last user message to check for intents
+  const lastUserMessage = messages.filter(m => m.role === "user").pop();
+  const userMessageText = typeof lastUserMessage?.content === "string" 
+    ? lastUserMessage.content 
+    : "";
+
+  // Parse intent from user message
+  const intent = parseIntent(userMessageText);
+  console.log(`[AI Router] Detected intent: ${intent.intent} (confidence: ${intent.confidence})`);
+  console.log(`[AI Router] Intent params:`, intent.params);
+
+  let actionResult: ActionResult | null = null;
+
+  // DEBUG: Check execution conditions
+  console.log(`[DEBUG] Execution conditions:`, {
+    confidence: intent.confidence,
+    confidenceCheck: intent.confidence > 0.7,
+    intentNotUnknown: intent.intent !== "unknown",
+    userId: userId,
+    hasUserId: !!userId,
+    shouldExecute: intent.confidence > 0.7 && intent.intent !== "unknown" && !!userId
+  });
+
+  // If high-confidence intent detected and userId available, execute action
+  if (intent.confidence > 0.7 && intent.intent !== "unknown" && userId) {
+    console.log(`[AI Router] EXECUTING action for intent: ${intent.intent}`);
+    try {
+      actionResult = await executeAction(intent, userId);
+      console.log(`[AI Router] Action SUCCESS:`, actionResult);
+    } catch (error) {
+      console.error(`[AI Router] Action execution FAILED:`, error);
+      actionResult = {
+        success: false,
+        message: "Der opstod en fejl under udførelsen af handlingen.",
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  // Add Friday system prompt if not already present
+  const hasSystemPrompt = messages.some(m => m.role === "system");
+  const messagesWithSystem = hasSystemPrompt
+    ? messages
+    : [{ role: "system" as const, content: getFridaySystemPrompt() }, ...messages];
+
+  // If action was executed, add result to context
+  const finalMessages: Message[] = [...messagesWithSystem];
+  if (actionResult) {
+    finalMessages.push({
+      role: "system",
+      content: `[Action Result] ${actionResult.success ? "Success" : "Failed"}: ${actionResult.message}${actionResult.data ? "\nData: " + JSON.stringify(actionResult.data, null, 2) : ""}${actionResult.error ? "\nError: " + actionResult.error : ""}`,
+    });
+  }
+
   try {
-    // For now, we primarily use OpenAI models via invokeLLM
-    // Future: Add support for Claude and Gemini with direct API calls
+    // Call AI to generate response (with action context if available)
     const response = await invokeLLM({
-      messages,
-      tools,
-      // stream, // Streaming will be handled separately
+      messages: finalMessages,
     });
 
     const messageContent = response.choices[0]?.message?.content;
-    const content = typeof messageContent === "string" ? messageContent : "";
-    const toolCalls = response.choices[0]?.message?.tool_calls?.map((tc) => ({
-      name: tc.function.name,
-      arguments: tc.function.arguments,
-    }));
+    let content = typeof messageContent === "string" ? messageContent : "";
+
+    // If action was executed successfully, prepend action confirmation
+    if (actionResult && actionResult.success) {
+      content = actionResult.message + "\n\n" + content;
+    }
 
     return {
       content,
@@ -104,185 +155,18 @@ export async function routeAI(options: AIRouterOptions): Promise<AIResponse> {
             totalTokens: response.usage.total_tokens,
           }
         : undefined,
-      toolCalls,
     };
   } catch (error) {
-    console.error(`AI Router error with model ${selectedModel}:`, error);
-    throw new Error(`Failed to get AI response: ${error}`);
-  }
-}
-
-/**
- * Stream AI response (for real-time chat)
- */
-export async function* streamAI(options: AIRouterOptions): AsyncGenerator<string> {
-  const {
-    messages,
-    taskType = "chat",
-    model: explicitModel,
-  } = options;
-
-  const selectedModel = explicitModel || selectModelForTask(taskType);
-
-  // For streaming, we'll use the OpenAI SDK directly
-  // This is a placeholder - actual streaming implementation will be in the chat router
-  try {
-    const response = await invokeLLM({
-      messages,
-    });
-
-    const messageContent = response.choices[0]?.message?.content;
-    const content = typeof messageContent === "string" ? messageContent : "";
+    console.error(`[AI Router] Error with model ${selectedModel}:`, error);
     
-    // Simulate streaming by yielding chunks
-    const words = content.split(" ");
-    for (const word of words) {
-      yield word + " ";
-      await new Promise((resolve) => setTimeout(resolve, 50)); // Simulate delay
+    // If action succeeded but AI failed, return action result
+    if (actionResult && actionResult.success) {
+      return {
+        content: actionResult.message,
+        model: selectedModel,
+      };
     }
-  } catch (error) {
-    console.error(`AI Stream error with model ${selectedModel}:`, error);
-    throw new Error(`Failed to stream AI response: ${error}`);
-  }
-}
-
-/**
- * Analyze lead score based on email content
- * Implements MEMORY_25: Verify lead name against actual email
- */
-export async function analyzeLeadScore(params: {
-  emailContent: string;
-  senderName: string;
-  senderEmail: string;
-}): Promise<{
-  score: number;
-  factors: Record<string, number>;
-  verified: boolean;
-}> {
-  const messages: Message[] = [
-    {
-      role: "system",
-      content: `You are a lead scoring AI for a cleaning company (Rendetalje). Analyze emails and score leads 0-100 based on:
-- Urgency keywords (ASAP, urgent, soon): +20
-- Business email domain (not gmail/hotmail): +15
-- Phone number included: +10
-- Specific address/location: +10
-- Detailed requirements: +15
-- Professional tone: +10
-- Company name mentioned: +10
-- Budget/price discussion: +10
-
-Return JSON: { "score": number, "factors": { "urgency": number, "business_email": number, ... }, "verified_name": boolean }`,
-    },
-    {
-      role: "user",
-      content: `Analyze this lead:
-Sender Name: ${params.senderName}
-Sender Email: ${params.senderEmail}
-Email Content: ${params.emailContent}`,
-    },
-  ];
-
-  const response = await routeAI({
-    messages,
-    taskType: "lead-analysis",
-    model: "gpt-4o",
-  });
-
-  try {
-    const result = JSON.parse(response.content);
-    return {
-      score: result.score || 0,
-      factors: result.factors || {},
-      verified: result.verified_name || false,
-    };
-  } catch (error) {
-    console.error("Error parsing lead score:", error);
-    return { score: 0, factors: {}, verified: false };
-  }
-}
-
-/**
- * Generate invoice from natural language
- */
-export async function generateInvoiceFromText(params: {
-  customerInfo: string;
-  serviceDescription: string;
-}): Promise<{
-  customer: { name: string; email?: string };
-  lines: Array<{ description: string; quantity: number; unitPrice: number }>;
-  total: number;
-}> {
-  const messages: Message[] = [
-    {
-      role: "system",
-      content: `You are an invoice generation AI for a cleaning company. Parse customer requests and generate invoice data.
-Return JSON: {
-  "customer": { "name": string, "email": string },
-  "lines": [{ "description": string, "quantity": number, "unitPrice": number }],
-  "total": number
-}
-Use standard cleaning rates: 250 DKK/hour for regular cleaning, 300 DKK/hour for deep cleaning.`,
-    },
-    {
-      role: "user",
-      content: `Generate invoice for:
-Customer: ${params.customerInfo}
-Service: ${params.serviceDescription}`,
-    },
-  ];
-
-  const response = await routeAI({
-    messages,
-    taskType: "invoice-create",
-    model: "gpt-4o",
-  });
-
-  try {
-    return JSON.parse(response.content);
-  } catch (error) {
-    console.error("Error parsing invoice data:", error);
-    throw new Error("Failed to generate invoice");
-  }
-}
-
-/**
- * Draft email response based on context
- * Implements MEMORY_7: Search existing customer emails before quote emails
- */
-export async function draftEmailResponse(params: {
-  originalEmail: string;
-  context?: string;
-  tone?: "professional" | "friendly" | "formal";
-}): Promise<{ subject: string; body: string }> {
-  const tone = params.tone || "professional";
-  
-  const messages: Message[] = [
-    {
-      role: "system",
-      content: `You are an email assistant for a cleaning company (Rendetalje). Draft ${tone} email responses.
-Return JSON: { "subject": string, "body": string }
-Always maintain a ${tone} tone and include relevant details.`,
-    },
-    {
-      role: "user",
-      content: `Draft a response to this email:
-${params.originalEmail}
-
-${params.context ? `Additional context: ${params.context}` : ""}`,
-    },
-  ];
-
-  const response = await routeAI({
-    messages,
-    taskType: "email-draft",
-    model: "gpt-4o",
-  });
-
-  try {
-    return JSON.parse(response.content);
-  } catch (error) {
-    console.error("Error parsing email draft:", error);
-    throw new Error("Failed to draft email");
+    
+    throw error;
   }
 }

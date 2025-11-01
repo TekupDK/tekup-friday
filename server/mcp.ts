@@ -5,6 +5,7 @@
 
 import { exec } from "child_process";
 import { promisify } from "util";
+import fs from "fs";
 
 const execAsync = promisify(exec);
 
@@ -24,18 +25,25 @@ async function callMCPTool(
   server: string,
   toolName: string,
   args: Record<string, unknown>
-): Promise<MCPToolResult> {
+): Promise<any> {
   try {
-    const argsJson = JSON.stringify(args).replace(/"/g, '\\"');
-    const command = `manus-mcp-cli tool call ${toolName} --server ${server} --input "${argsJson}"`;
+    const argsJson = JSON.stringify(args);
+    const tmpFile = `/tmp/mcp-result-${Date.now()}.json`;
+    const command = `MANUS_MCP_RESULT_FILEPATH=${tmpFile} manus-mcp-cli tool call ${toolName} --server ${server} --input '${argsJson}'`;
     
     const { stdout, stderr } = await execAsync(command);
     
-    if (stderr) {
+    if (stderr && !stderr.includes("Tool call completed")) {
       console.error(`MCP stderr: ${stderr}`);
     }
     
-    const result = JSON.parse(stdout);
+    // Read result from file
+    const resultContent = fs.readFileSync(tmpFile, "utf-8");
+    const result = JSON.parse(resultContent);
+    
+    // Clean up temp file
+    fs.unlinkSync(tmpFile);
+    
     return result;
   } catch (error) {
     console.error(`MCP tool call failed: ${error}`);
@@ -94,9 +102,22 @@ export async function listGmailThreads(params: {
       q: params.query || "",
     });
     
+    // Check if MCP returned an error or unfinished call
+    if (result.message && result.message.includes("unfinished")) {
+      console.warn("Gmail MCP requires OAuth authentication");
+      return [];
+    }
+    
     const content = extractTextContent(result);
     // Parse the JSON response from Gmail MCP
     const threads = JSON.parse(content);
+    
+    // Validate that threads is an array
+    if (!Array.isArray(threads)) {
+      console.warn("Gmail MCP returned non-array result:", threads);
+      return [];
+    }
+    
     return threads;
   } catch (error) {
     console.error("Error listing Gmail threads:", error);
@@ -195,8 +216,21 @@ export async function listCalendarEvents(params: {
       max_results: params.maxResults || 50,
     });
     
+    // Check if MCP returned an error or unfinished call
+    if (!result || (result.message && result.message.includes("unfinished"))) {
+      console.warn("Google Calendar MCP requires OAuth authentication");
+      return [];
+    }
+    
     const content = extractTextContent(result);
     const events = JSON.parse(content);
+    
+    // Validate that events is an array
+    if (!Array.isArray(events)) {
+      console.warn("Google Calendar MCP returned non-array result:", events);
+      return [];
+    }
+    
     return events;
   } catch (error) {
     console.error("Error listing calendar events:", error);
@@ -226,6 +260,12 @@ export async function createCalendarEvent(params: {
     const result = await callMCPTool("google-calendar", "google_calendar_create_events", {
       events,
     });
+    
+    // Check if MCP returned an error or unfinished call
+    if (!result || (result.message && result.message.includes("unfinished"))) {
+      console.warn("Google Calendar MCP requires OAuth authentication");
+      throw new Error("Google Calendar OAuth required. Please authenticate via MCP.");
+    }
     
     const content = extractTextContent(result);
     const event = JSON.parse(content);

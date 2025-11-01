@@ -19,7 +19,7 @@ import {
   updateTaskStatus,
   trackEvent,
 } from "./db";
-import { routeAI, analyzeLeadScore, generateInvoiceFromText, draftEmailResponse } from "./ai-router";
+import { routeAI } from "./ai-router";
 import {
   listGmailThreads,
   getGmailThread,
@@ -67,7 +67,7 @@ export const appRouter = router({
       const userMessage = await createMessage({ conversationId: input.conversationId, role: "user", content: input.content, attachments: input.attachments });
       const messages = await getConversationMessages(input.conversationId);
       const aiMessages = messages.map((m) => ({ role: m.role as "user" | "assistant" | "system", content: m.content }));
-      const aiResponse = await routeAI({ messages: aiMessages, taskType: "chat" });
+      const aiResponse = await routeAI({ messages: aiMessages, taskType: "chat", userId: ctx.user.id });
       const assistantMessage = await createMessage({ conversationId: input.conversationId, role: "assistant", content: aiResponse.content, model: aiResponse.model });
       await trackEvent({ userId: ctx.user.id, eventType: "message_sent", eventData: { conversationId: input.conversationId } });
       return { userMessage, assistantMessage };
@@ -107,10 +107,9 @@ export const appRouter = router({
         await updateLeadStatus(input.leadId, input.status);
         return { success: true };
       }),
-      analyzeScore: protectedProcedure.input(z.object({ leadId: z.number(), emailContent: z.string(), senderName: z.string(), senderEmail: z.string() })).mutation(async ({ input }) => {
-        const analysis = await analyzeLeadScore({ emailContent: input.emailContent, senderName: input.senderName, senderEmail: input.senderEmail });
-        await updateLeadScore(input.leadId, analysis.score);
-        return analysis;
+      updateScore: protectedProcedure.input(z.object({ leadId: z.number(), score: z.number() })).mutation(async ({ input }) => {
+        await updateLeadScore(input.leadId, input.score);
+        return { success: true };
       }),
     }),
     tasks: router({
@@ -127,12 +126,10 @@ export const appRouter = router({
 
   // Friday AI commands
   friday: router({
-    generateInvoice: protectedProcedure.input(z.object({ customerInfo: z.string(), serviceDescription: z.string() })).mutation(async ({ input }) => generateInvoiceFromText(input)),
-    draftEmail: protectedProcedure.input(z.object({ originalEmail: z.string(), context: z.string().optional(), tone: z.enum(["professional", "friendly", "formal"]).optional() })).mutation(async ({ input }) => draftEmailResponse(input)),
     findRecentLeads: protectedProcedure.input(z.object({ days: z.number().default(7) })).query(async ({ input }) => {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - input.days);
-      const query = `after:${daysAgo.toISOString().split("T")[0]} (rengøring OR cleaning OR tilbud OR quote)`;
+      const query = `after:${daysAgo.toISOString().split("T")[0]}`;
       return searchGmail(query);
     }),
     getCustomers: protectedProcedure.query(async () => getCustomers()),
