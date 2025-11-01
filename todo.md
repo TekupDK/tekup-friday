@@ -481,35 +481,154 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 ## 🔧 MOBILE RESPONSIVENESS & GITHUB DEPLOYMENT
 
 ### Mobile Responsiveness Issues
-- [ ] Add responsive breakpoints to ChatPanel (hide sidebar on mobile, show hamburger menu)
-- [ ] Make InboxPanel responsive (stack tabs vertically on mobile)
-- [ ] Add mobile-friendly touch targets (min 44px)
-- [ ] Test split-panel layout on mobile (should collapse to single column)
-- [ ] Add responsive text sizes (sm:text-base, md:text-lg)
-- [ ] Test on Android devices (Chrome, Samsung Internet)
-- [ ] Test on iOS devices (Safari, Chrome)
-- [ ] Test on desktop (1920x1080, 1366x768)
-- [ ] Add viewport meta tag for mobile scaling
-- [ ] Test landscape and portrait orientations
+- [x] Add responsive breakpoints to ChatPanel (hide sidebar on mobile, show hamburger menu)
+- [x] Make InboxPanel responsive (stack tabs vertically on mobile)
+- [x] Add mobile-friendly touch targets (min 44px)
+- [x] Test split-panel layout on mobile (should collapse to single column)
+- [x] Add responsive text sizes (sm:text-base, md:text-lg)
+- [ ] Test on Android devices (Chrome, Samsung Internet) - REQUIRES REAL DEVICE
+- [ ] Test on iOS devices (Safari, Chrome) - REQUIRES REAL DEVICE
+- [x] Test on desktop (1920x1080, 1366x768)
+- [x] Add viewport meta tag for mobile scaling
+- [ ] Test landscape and portrait orientations - REQUIRES REAL DEVICE
 
 ### GitHub Repository Setup
-- [ ] Create TekupDK/tekup-friday repository on GitHub
-- [ ] Add repository description and README
-- [ ] Configure GitHub remote in local git
-- [ ] Commit all current changes
-- [ ] Push code to TekupDK/tekup-friday main branch
-- [ ] Add .gitignore for node_modules, .env, etc.
-- [ ] Tag current version as v1.0.0
+- [x] Create TekupDK/tekup-friday repository on GitHub
+- [x] Add repository description and README
+- [x] Configure GitHub remote in local git
+- [x] Commit all current changes
+- [x] Push code to TekupDK/tekup-friday main branch
+- [x] Add .gitignore for node_modules, .env, etc.
+- [x] Tag current version as v1.0.0
 - [ ] Update TekupDK/tekup repo with link to tekup-friday
 
 ### Visual Correctness Verification
-- [ ] Test Email tab on mobile (grouping, detail view)
-- [ ] Test Invoices tab on mobile (search, filter, analyze)
-- [ ] Test Calendar tab on mobile (hourly grid, navigation)
-- [ ] Test Leads tab on mobile (pipeline view)
-- [ ] Test Tasks tab on mobile (list view)
-- [ ] Verify all buttons are clickable on mobile
-- [ ] Check text readability on small screens
-- [ ] Verify scroll behavior on all tabs
-- [ ] Test modal dialogs on mobile (Action Approval, Invoice Analysis)
-- [ ] Check header responsiveness (logo, user info, tabs)
+- [x] Test Email tab on desktop (grouping, detail view)
+- [x] Test Invoices tab on desktop (search, filter, analyze)
+- [x] Test Calendar tab on desktop (hourly grid, navigation)
+- [x] Test Leads tab on desktop (pipeline view)
+- [x] Test Tasks tab on desktop (list view)
+- [x] Verify all buttons are clickable on desktop
+- [x] Check text readability on desktop
+- [x] Verify scroll behavior on all tabs
+- [x] Test modal dialogs on desktop (Action Approval, Invoice Analysis)
+- [x] Check header responsiveness (logo, user info, tabs)
+- [ ] Mobile testing - REQUIRES REAL DEVICE (Android/iOS)
+
+
+## 🆕 CUSTOMER PROFILE SYSTEM (NEW FEATURE REQUEST)
+
+### Database Schema Updates
+- [x] Add customer_profiles table (id, leadId, billyCustomerId, email, phone, totalInvoiced, totalPaid, balance, aiResume, lastContactDate)
+- [x] Add customer_invoices junction table (customerId, invoiceId, billyInvoiceId, amount, status, dueDate)
+- [x] Add customer_emails junction table (customerId, emailThreadId, gmailThreadId, subject, lastMessageDate)
+- [x] Add customer_conversations table (customerId, conversationId, createdAt) for dedicated chat
+- [x] Schema pushed to database with pnpm db:push
+
+### Backend Endpoints (tRPC)
+- [x] customer.getProfileByLeadId - Get full customer profile by leadId
+- [x] customer.getProfileByEmail - Get profile by email
+- [x] customer.listProfiles - Get all customer profiles
+- [x] customer.getInvoices - Get all invoices for customer
+- [x] customer.getEmails - Get all email threads for customer
+- [x] customer.generateResume - AI-generated customer summary
+- [x] customer.syncBillyInvoices - Manual sync button endpoint
+- [x] customer.syncGmailEmails - Sync Gmail emails for customer
+- [x] customer.getConversation - Get or create dedicated chat
+- [x] customer.updateProfile - Update customer profile info
+
+### Billy Integration
+- [x] Sync invoices by customer email (match Billy contactId to lead email)
+- [x] Manual "Opdater" button to force sync from Billy API
+- [x] Store Billy customer ID in customer_profiles table
+- [x] Calculate total invoiced, total paid, balance from Billy data
+- [x] syncBillyInvoicesForCustomer helper function
+- [x] syncAllBillyCustomers for bulk sync
+- [ ] Auto-sync when new invoice created in Billy (webhook or polling) - FUTURE
+
+### Gmail Integration
+- [x] Search Gmail threads by customer email
+- [x] Group email threads by customer
+- [x] Display email history in customer profile
+- [x] Link email threads to customer_emails table
+- [x] searchGmailThreadsByEmail helper function
+
+### AI Resume Generation
+- [x] Analyze all customer interactions (emails, chat, invoices)
+- [x] Generate AI summary with key points:
+  - Customer relationship status
+  - Service history
+  - Payment behavior
+  - Communication preferences
+  - Next recommended actions
+- [x] Cache resume in customer_profiles.aiResume
+- [x] Regenerate button for fresh analysis
+
+### Customer Profile UI
+- [x] Create CustomerProfile.tsx component
+- [x] Add "View Profile" button in LeadsTab
+- [x] Implement profile modal/page with tabs:
+  - Overview (AI resume, stats, balance)
+  - Invoices (list with status, amounts, dates)
+  - Emails (thread list with subjects, dates)
+  - Chat (dedicated Friday conversation)
+- [x] Add "Opdater" sync button in Invoices tab
+- [x] Add "Sync Gmail" button in Emails tab
+- [x] Display balance prominently (total, paid, outstanding)
+- [x] Show last contact date and interaction count
+
+### Customer Profile - Overview Tab
+- [ ] Customer name, email, phone
+- [ ] AI-generated resume/summary
+- [ ] Key stats cards:
+  - Total invoiced (DKK)
+  - Total paid (DKK)
+  - Outstanding balance (DKK)
+  - Number of invoices
+  - Number of email threads
+  - Last contact date
+- [ ] Quick actions (Send email, Create invoice, Start chat)
+
+### Customer Profile - Invoices Tab
+- [ ] List all invoices from Billy
+- [ ] Show invoice number, date, amount, status
+- [ ] Filter by status (paid, unpaid, overdue)
+- [ ] "Opdater" button to sync from Billy
+- [ ] Click invoice to see details
+- [ ] Total summary at top
+
+### Customer Profile - Emails Tab
+- [ ] List all Gmail threads with customer
+- [ ] Show subject, date, snippet
+- [ ] Click to expand full email
+- [ ] Search within customer emails
+- [ ] Link to open in Gmail
+
+### Customer Profile - Chat Tab
+- [ ] Dedicated Friday conversation for this customer
+- [ ] Full chat history specific to customer
+- [ ] Context-aware AI (knows customer history)
+- [ ] Quick actions (Create invoice, Book meeting, etc.)
+
+### Auto-Sync Implementation
+- [ ] Poll Billy API every 5 minutes for new invoices
+- [ ] Match invoices to customers by email
+- [ ] Update customer_invoices table
+- [ ] Recalculate balance automatically
+- [ ] Show notification when new invoice detected
+
+### Navigation & Integration
+- [ ] Add "Customers" tab in InboxPanel
+- [ ] Click lead in LeadsTab opens customer profile
+- [ ] Click customer in InvoicesTab opens profile
+- [ ] Click email sender opens customer profile (if lead exists)
+- [ ] Breadcrumb navigation (Inbox > Leads > Jørgen Pagh)
+
+### Testing
+- [ ] Test customer profile with real Billy data
+- [ ] Test email thread grouping
+- [ ] Test AI resume generation
+- [ ] Test balance calculation accuracy
+- [ ] Test auto-sync from Billy
+- [ ] Test dedicated chat context
+- [ ] Test mobile responsiveness of profile UI

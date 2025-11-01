@@ -139,6 +139,86 @@ export type Lead = typeof leads.$inferSelect;
 export type InsertLead = typeof leads.$inferInsert;
 
 /**
+ * Customer profiles table - aggregated customer data from leads, invoices, emails
+ */
+export const customerProfiles = mysqlTable("customer_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  leadId: int("leadId"), // reference to leads table
+  billyCustomerId: varchar("billyCustomerId", { length: 255 }), // Billy customer ID
+  billyOrganizationId: varchar("billyOrganizationId", { length: 255 }), // Billy organization ID
+  email: varchar("email", { length: 320 }).notNull(),
+  name: varchar("name", { length: 255 }),
+  phone: varchar("phone", { length: 32 }),
+  totalInvoiced: int("totalInvoiced").default(0).notNull(), // in øre
+  totalPaid: int("totalPaid").default(0).notNull(), // in øre
+  balance: int("balance").default(0).notNull(), // in øre (totalInvoiced - totalPaid)
+  invoiceCount: int("invoiceCount").default(0).notNull(),
+  emailCount: int("emailCount").default(0).notNull(),
+  aiResume: text("aiResume"), // AI-generated customer summary
+  lastContactDate: timestamp("lastContactDate"),
+  lastSyncDate: timestamp("lastSyncDate"), // last Billy sync
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CustomerProfile = typeof customerProfiles.$inferSelect;
+export type InsertCustomerProfile = typeof customerProfiles.$inferInsert;
+
+/**
+ * Customer invoices junction table - links customers to their invoices
+ */
+export const customerInvoices = mysqlTable("customer_invoices", {
+  id: int("id").autoincrement().primaryKey(),
+  customerId: int("customerId").notNull(), // reference to customer_profiles
+  invoiceId: int("invoiceId"), // reference to invoices table (optional)
+  billyInvoiceId: varchar("billyInvoiceId", { length: 255 }).notNull(),
+  invoiceNo: varchar("invoiceNo", { length: 64 }),
+  amount: int("amount").notNull(), // in øre
+  paidAmount: int("paidAmount").default(0).notNull(), // in øre
+  status: mysqlEnum("status", ["draft", "approved", "sent", "paid", "overdue", "voided"]).default("draft").notNull(),
+  entryDate: timestamp("entryDate"),
+  dueDate: timestamp("dueDate"),
+  paidDate: timestamp("paidDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CustomerInvoice = typeof customerInvoices.$inferSelect;
+export type InsertCustomerInvoice = typeof customerInvoices.$inferInsert;
+
+/**
+ * Customer emails junction table - links customers to their email threads
+ */
+export const customerEmails = mysqlTable("customer_emails", {
+  id: int("id").autoincrement().primaryKey(),
+  customerId: int("customerId").notNull(), // reference to customer_profiles
+  emailThreadId: int("emailThreadId"), // reference to email_threads (optional)
+  gmailThreadId: varchar("gmailThreadId", { length: 255 }).notNull(),
+  subject: text("subject"),
+  snippet: text("snippet"),
+  lastMessageDate: timestamp("lastMessageDate"),
+  isRead: boolean("isRead").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CustomerEmail = typeof customerEmails.$inferSelect;
+export type InsertCustomerEmail = typeof customerEmails.$inferInsert;
+
+/**
+ * Customer conversations table - dedicated chat conversations per customer
+ */
+export const customerConversations = mysqlTable("customer_conversations", {
+  id: int("id").autoincrement().primaryKey(),
+  customerId: int("customerId").notNull(), // reference to customer_profiles
+  conversationId: int("conversationId").notNull(), // reference to conversations
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CustomerConversation = typeof customerConversations.$inferSelect;
+export type InsertCustomerConversation = typeof customerConversations.$inferInsert;
+
+/**
  * Tasks table - stores user tasks and reminders
  */
 export const tasks = mysqlTable("tasks", {

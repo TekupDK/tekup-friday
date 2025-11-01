@@ -154,6 +154,16 @@ export async function searchGmailThreads(params: {
 }
 
 /**
+ * Search Gmail threads by email address
+ */
+export async function searchGmailThreadsByEmail(email: string): Promise<GmailThread[]> {
+  return await searchGmailThreads({
+    query: `from:${email} OR to:${email}`,
+    maxResults: 100,
+  });
+}
+
+/**
  * Get a single Gmail thread by ID
  */
 export async function getGmailThread(threadId: string): Promise<GmailThread | null> {
