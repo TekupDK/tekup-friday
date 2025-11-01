@@ -186,3 +186,52 @@
 - [ ] Verify leads appear in Leads tab after creation
 - [ ] Verify invoices appear in Invoices tab after creation
 - [ ] Verify calendar events sync to Calendar tab
+
+## Google Service Account Implementation
+
+### Service Account Setup
+- [ ] Request GOOGLE_SERVICE_ACCOUNT_KEY secret from user
+- [ ] Configure domain-wide delegation for info@rendetalje.dk
+- [ ] Add required OAuth scopes (gmail.readonly, gmail.send, calendar, calendar.events)
+
+### Direct Google API Integration
+- [ ] Replace MCP Gmail calls with googleapis npm package
+- [ ] Replace MCP Calendar calls with googleapis npm package
+- [ ] Implement service account authentication
+- [ ] Test Gmail search and read functionality
+- [ ] Test Calendar list and create functionality
+
+### Testing with Real Data
+- [ ] Test lead detection from info@rendetalje.dk Gmail
+- [ ] Test calendar booking with RenOS Booking Calendar
+- [ ] Verify no attendees are added to calendar events
+- [ ] Test email draft creation
+
+## Conversation Memory & Multi-Agent Support
+
+### Conversation Memory
+- [ ] Fix input field disappearing bug after sending message
+- [ ] Load conversation history when clicking on existing conversation
+- [ ] Pass conversation history to AI router for context
+- [ ] Implement conversation context window (last 10 messages)
+- [ ] Add "Clear conversation" button
+
+### Multi-Agent Support
+- [ ] Add AI model selector dropdown (Gemini, Claude, ChatGPT, Manus)
+- [ ] Update AI router to support multiple models
+- [ ] Add model-specific API clients (Anthropic, OpenAI, Manus)
+- [ ] Store selected model per conversation
+- [ ] Display current model in chat header
+
+### Conversation Titles
+- [ ] Generate automatic title from first user message
+- [ ] Update conversation title in database
+- [ ] Display meaningful titles in conversation list instead of "New Conversation"
+- [ ] Add "Rename conversation" functionality
+
+### Google Service Account Setup
+- [ ] Add GOOGLE_SERVICE_ACCOUNT_KEY to environment variables
+- [ ] Add GOOGLE_IMPERSONATED_USER to environment variables
+- [ ] Add GOOGLE_CALENDAR_ID to environment variables
+- [ ] Test Gmail search with real data
+- [ ] Test Calendar booking with real calendar

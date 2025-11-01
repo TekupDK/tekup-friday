@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
-import { Send, Plus, Paperclip, Mic } from "lucide-react";
+import { Send, Plus, Paperclip, Mic, Bot } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 
@@ -18,6 +19,7 @@ export default function ChatPanel() {
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [inputMessage, setInputMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<"gemini-2.5-flash" | "claude-3-5-sonnet" | "gpt-4o" | "manus-ai">("gemini-2.5-flash");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: conversations, refetch: refetchConversations } = trpc.chat.list.useQuery();
@@ -62,6 +64,7 @@ export default function ChatPanel() {
             sendMessage.mutate({
               conversationId: data.id,
               content: inputMessage,
+              model: selectedModel,
             });
           },
         }
@@ -70,6 +73,7 @@ export default function ChatPanel() {
       sendMessage.mutate({
         conversationId: selectedConversationId,
         content: inputMessage,
+        model: selectedModel,
       });
     }
   };
@@ -179,7 +183,22 @@ export default function ChatPanel() {
 
             {/* Input Area */}
             <div className="border-t border-border p-4">
-              <div className="max-w-3xl mx-auto flex gap-2">
+              <div className="max-w-3xl mx-auto space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Bot className="w-4 h-4" />
+                  <Select value={selectedModel} onValueChange={(value: any) => setSelectedModel(value)}>
+                    <SelectTrigger className="w-[200px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                      <SelectItem value="claude-3-5-sonnet">Claude 3.5 Sonnet</SelectItem>
+                      <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                      <SelectItem value="manus-ai">Manus AI</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2">
                 <Button variant="outline" size="icon" className="shrink-0">
                   <Paperclip className="w-4 h-4" />
                 </Button>
@@ -206,6 +225,7 @@ export default function ChatPanel() {
                 >
                   <Send className="w-4 h-4" />
                 </Button>
+                </div>
               </div>
             </div>
           </>

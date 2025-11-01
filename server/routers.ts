@@ -63,11 +63,11 @@ export const appRouter = router({
     create: protectedProcedure.input(z.object({ title: z.string().optional() })).mutation(async ({ ctx, input }) => {
       return createConversation({ userId: ctx.user.id, title: input.title || "New Conversation" });
     }),
-    sendMessage: protectedProcedure.input(z.object({ conversationId: z.number(), content: z.string(), attachments: z.array(z.object({ url: z.string(), name: z.string(), type: z.string() })).optional() })).mutation(async ({ ctx, input }) => {
+    sendMessage: protectedProcedure.input(z.object({ conversationId: z.number(), content: z.string(), model: z.enum(["gemini-2.5-flash", "claude-3-5-sonnet", "gpt-4o", "manus-ai"]).optional(), attachments: z.array(z.object({ url: z.string(), name: z.string(), type: z.string() })).optional() })).mutation(async ({ ctx, input }) => {
       const userMessage = await createMessage({ conversationId: input.conversationId, role: "user", content: input.content, attachments: input.attachments });
       const messages = await getConversationMessages(input.conversationId);
       const aiMessages = messages.map((m) => ({ role: m.role as "user" | "assistant" | "system", content: m.content }));
-      const aiResponse = await routeAI({ messages: aiMessages, taskType: "chat", userId: ctx.user.id });
+      const aiResponse = await routeAI({ messages: aiMessages, taskType: "chat", userId: ctx.user.id, preferredModel: input.model });
       const assistantMessage = await createMessage({ conversationId: input.conversationId, role: "assistant", content: aiResponse.content, model: aiResponse.model });
       await trackEvent({ userId: ctx.user.id, eventType: "message_sent", eventData: { conversationId: input.conversationId } });
       return { userMessage, assistantMessage };

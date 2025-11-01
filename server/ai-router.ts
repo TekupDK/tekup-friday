@@ -11,7 +11,8 @@ export type AIModel =
   | "gpt-4o" 
   | "gpt-4o-mini" 
   | "claude-3-5-sonnet" 
-  | "gemini-2.5-flash";
+  | "gemini-2.5-flash"
+  | "manus-ai";
 
 export type TaskType =
   | "chat"
@@ -26,8 +27,10 @@ export interface AIRouterOptions {
   messages: Message[];
   taskType?: TaskType;
   model?: AIModel;
+  preferredModel?: AIModel;
   stream?: boolean;
   tools?: any[];
+  userId?: number;
 }
 
 export interface AIResponse {
@@ -69,11 +72,12 @@ export async function routeAI(options: AIRouterOptions & { userId?: number }): P
     messages,
     taskType = "chat",
     model: explicitModel,
+    preferredModel,
     userId,
   } = options;
 
-  // Use explicit model if provided, otherwise select based on task type
-  const selectedModel = explicitModel || selectModelForTask(taskType);
+  // Use preferred model first, then explicit model, then select based on task type
+  const selectedModel = preferredModel || explicitModel || selectModelForTask(taskType);
 
   console.log(`[AI Router] Using model: ${selectedModel} for task: ${taskType}`);
 

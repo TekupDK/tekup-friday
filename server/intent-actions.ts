@@ -5,7 +5,7 @@
  */
 
 import { createLead, createTask, getUserLeads, getUserTasks } from "./db";
-import { searchGmail, createCalendarEvent, listCalendarEvents } from "./mcp";
+import { searchGmailThreads, createCalendarEvent, listCalendarEvents, checkCalendarAvailability } from "./google-api";
 import { createInvoice, getCustomers } from "./billy";
 
 export type Intent = 
@@ -649,7 +649,7 @@ async function executeSearchEmail(params: Record<string, any>, userId: number): 
     query += `after:${weekAgo.toISOString().split("T")[0]}`;
   }
   
-  const results = await searchGmail(query.trim() || "in:inbox");
+  const results = await searchGmailThreads({ query: query.trim() || "in:inbox", maxResults: 20 });
   
   return {
     success: true,
