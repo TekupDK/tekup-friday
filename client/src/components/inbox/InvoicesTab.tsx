@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Search, Sparkles, X } from "lucide-react";
+import { FileText, Search, Sparkles, X, Download, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Streamdown } from "streamdown";
 
@@ -26,6 +26,8 @@ export default function InvoicesTab() {
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
   const [analyzingInvoice, setAnalyzingInvoice] = useState(false);
+  const [feedbackGiven, setFeedbackGiven] = useState<'up' | 'down' | null>(null);
+  const submitFeedbackMutation = trpc.chat.submitAnalysisFeedback.useMutation();
 
   // Filter invoices based on search and status
   const filteredInvoices = useMemo(() => {
@@ -45,6 +47,62 @@ export default function InvoicesTab() {
       return matchesSearch && matchesStatus;
     });
   }, [invoices, searchQuery, statusFilter]);
+
+  const handleFeedback = async (rating: 'up' | 'down') => {
+    if (!selectedInvoice) return;
+    
+    setFeedbackGiven(rating);
+    
+    try {
+      await submitFeedbackMutation.mutateAsync({
+        invoiceId: selectedInvoice.id,
+        rating,
+        analysis: aiAnalysis,
+      });
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+    }
+  };
+
+  const exportToCSV = (invoice: any, analysis: string) => {
+    // Create CSV content
+    const headers = ["Invoice Number", "Customer", "Status", "Entry Date", "Payment Terms", "AI Summary", "Recommendations"];
+    
+    // Extract recommendations from AI analysis (simple text extraction)
+    const recommendations = analysis.split('\n').filter(line => 
+      line.toLowerCase().includes('recommend') || 
+      line.toLowerCase().includes('action') ||
+      line.toLowerCase().includes('follow-up')
+    ).join(' | ');
+    
+    const summary = analysis.replace(/[\n\r]/g, ' ').substring(0, 200) + '...';
+    
+    const row = [
+      invoice.invoiceNo || invoice.id.slice(0, 8),
+      invoice.contactId,
+      invoice.state,
+      new Date(invoice.entryDate).toLocaleDateString('da-DK'),
+      `${invoice.paymentTermsDays} days`,
+      `"${summary}"`,
+      `"${recommendations || 'See full analysis'}"`
+    ];
+    
+    const csvContent = [
+      headers.join(','),
+      row.join(',')
+    ].join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `invoice-${invoice.invoiceNo || invoice.id}-analysis.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleAnalyzeInvoice = async (invoice: any) => {
     setSelectedInvoice(invoice);
@@ -234,9 +292,43 @@ Please analyze this invoice and provide:
                 <span className="ml-3 text-muted-foreground">Analyzing invoice...</span>
               </div>
             ) : aiAnalysis ? (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <Streamdown>{aiAnalysis}</Streamdown>
-              </div>
+              <>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <Streamdown>{aiAnalysis}</Streamdown>
+                </div>
+                <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Was this analysis helpful?</span>
+                    <Button
+                      variant={feedbackGiven === 'up' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleFeedback('up')}
+                      className="gap-1"
+                    >
+                      <ThumbsUp className="h-4 w-4" />
+                      {feedbackGiven === 'up' && 'Thanks!'}
+                    </Button>
+                    <Button
+                      variant={feedbackGiven === 'down' ? 'destructive' : 'outline'}
+                      size="sm"
+                      onClick={() => handleFeedback('down')}
+                      className="gap-1"
+                    >
+                      <ThumbsDown className="h-4 w-4" />
+                      {feedbackGiven === 'down' && 'Noted'}
+                    </Button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => exportToCSV(selectedInvoice, aiAnalysis)}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export to CSV
+                  </Button>
+                </div>
+              </>
             ) : (
               <p className="text-muted-foreground text-center py-8">
                 Click "Analyze" to get AI insights about this invoice

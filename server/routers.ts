@@ -102,6 +102,13 @@ export const appRouter = router({
       });
       return { analysis: aiResponse.content };
     }),
+    submitAnalysisFeedback: protectedProcedure.input(z.object({ invoiceId: z.string(), rating: z.enum(["up", "down"]), analysis: z.string() })).mutation(async ({ ctx, input }) => {
+      // Store feedback in database for analytics
+      // For now, just log it (can be extended to save to DB later)
+      console.log(`[Feedback] User ${ctx.user.id} rated invoice ${input.invoiceId} analysis as ${input.rating}`);
+      await trackEvent({ userId: ctx.user.id, eventType: "analysis_feedback", eventData: { invoiceId: input.invoiceId, rating: input.rating } });
+      return { success: true };
+    }),
     executeAction: protectedProcedure.input(z.object({ conversationId: z.number(), actionId: z.string(), actionType: z.string(), actionParams: z.record(z.string(), z.any()) })).mutation(async ({ ctx, input }) => {
       // Execute the approved action
       const intent = { intent: input.actionType as any, params: input.actionParams, confidence: 1.0 };

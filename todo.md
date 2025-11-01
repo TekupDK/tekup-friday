@@ -317,3 +317,36 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Reference correct base URL: https://tekup-billy-production.up.railway.app
 - [x] Update version references to 2.0.0
 - [x] Fix branding: "Billy-mcp By Tekup" (not "Tekup-Billy")
+
+
+## 🎯 NEW MANUS AI SUGGESTIONS - Additional Features
+
+### CSV Export for AI-Analyzed Invoice Data
+- [x] Add "Export to CSV" button in AI analysis dialog
+- [x] Generate CSV with invoice details + AI insights
+- [x] Include columns: Invoice#, Customer, Status, Amount, AI Summary, Recommendations
+- [x] Download CSV file to user's computer
+- [x] Format currency and dates properly in CSV
+
+### User Feedback Mechanism for AI Analysis
+- [x] Add thumbs up/down buttons in AI analysis dialog
+- [x] Store feedback in database (rating, invoice_id, analysis_id)
+- [x] Show feedback confirmation message
+- [x] Track feedback analytics for AI improvement
+- [ ] Optional: Add comment field for detailed feedback (future enhancement)
+
+### Notification System for New Invoices
+- [ ] Integrate with built-in notification API
+- [ ] Detect new invoices (compare with last fetch)
+- [ ] Send notification when new invoice appears
+- [ ] Show notification badge on Invoices tab
+- [ ] Mark notifications as read when viewed
+- [ ] Optional: Email notifications via Gmail API
+
+### MCP Audit - Fix All Errors
+- [x] Use MCP to scan entire codebase
+- [x] Identify TypeScript errors (NONE FOUND!)
+- [x] Identify runtime errors (NONE FOUND!)
+- [x] Identify missing imports (NONE FOUND!)
+- [x] Identify unused code
+- [x] Fix all identified issues systematically
