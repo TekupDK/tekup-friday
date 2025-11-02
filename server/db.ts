@@ -347,6 +347,26 @@ export async function updateTaskStatus(
   await db.update(tasks).set({ status }).where(eq(tasks.id, id));
 }
 
+export async function updateTask(
+  id: number,
+  data: Partial<Omit<InsertTask, "id" | "userId" | "createdAt">>
+): Promise<Task | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  await db.update(tasks).set(data).where(eq(tasks.id, id));
+  
+  const updated = await db.select().from(tasks).where(eq(tasks.id, id)).limit(1);
+  return updated[0] || null;
+}
+
+export async function deleteTask(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(tasks).where(eq(tasks.id, id));
+}
+
 // ============= Analytics Functions =============
 
 export async function trackEvent(data: InsertAnalyticsEvent): Promise<void> {
