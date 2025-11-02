@@ -23,7 +23,10 @@ export async function createContext(
       try {
         user = await db.getUserByOpenId(ENV.ownerOpenId);
         if (user) {
-          console.log("[Dev Mode] Using owner account:", user.name || user.email);
+          console.log(
+            "[Dev Mode] Using owner account:",
+            user.name || user.email
+          );
         }
       } catch (dbError) {
         console.error("[Dev Mode] Failed to get owner user:", dbError);

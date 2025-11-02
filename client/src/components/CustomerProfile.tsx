@@ -1,9 +1,20 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,23 +39,38 @@ interface CustomerProfileProps {
   onClose: () => void;
 }
 
-export default function CustomerProfile({ leadId, open, onClose }: CustomerProfileProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "invoices" | "emails" | "chat">("overview");
+export default function CustomerProfile({
+  leadId,
+  open,
+  onClose,
+}: CustomerProfileProps) {
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "invoices" | "emails" | "chat"
+  >("overview");
 
   // Fetch customer profile
-  const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = trpc.customer.getProfileByLeadId.useQuery(
-    { leadId },
-    { enabled: open }
-  );
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    refetch: refetchProfile,
+  } = trpc.customer.getProfileByLeadId.useQuery({ leadId }, { enabled: open });
 
   // Fetch invoices
-  const { data: invoices, isLoading: invoicesLoading, refetch: refetchInvoices } = trpc.customer.getInvoices.useQuery(
+  const {
+    data: invoices,
+    isLoading: invoicesLoading,
+    refetch: refetchInvoices,
+  } = trpc.customer.getInvoices.useQuery(
     { customerId: profile?.id || 0 },
     { enabled: !!profile?.id }
   );
 
   // Fetch emails
-  const { data: emails, isLoading: emailsLoading, refetch: refetchEmails } = trpc.customer.getEmails.useQuery(
+  const {
+    data: emails,
+    isLoading: emailsLoading,
+    refetch: refetchEmails,
+  } = trpc.customer.getEmails.useQuery(
     { customerId: profile?.id || 0 },
     { enabled: !!profile?.id }
   );
@@ -75,7 +101,7 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
   if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] p-0">
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="flex items-center gap-3">
@@ -83,8 +109,14 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
               <User className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <div className="text-xl font-semibold">{profile?.name || profile?.email || "Loading..."}</div>
-              {profile?.name && <div className="text-sm text-muted-foreground font-normal">{profile.email}</div>}
+              <div className="text-xl font-semibold">
+                {profile?.name || profile?.email || "Loading..."}
+              </div>
+              {profile?.name && (
+                <div className="text-sm text-muted-foreground font-normal">
+                  {profile.email}
+                </div>
+              )}
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -94,14 +126,24 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col">
+          <Tabs
+            value={activeTab}
+            onValueChange={v => setActiveTab(v as any)}
+            className="flex-1 flex flex-col"
+          >
             <div className="border-b px-6">
               <TabsList className="w-full justify-start bg-transparent">
-                <TabsTrigger value="overview" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="overview"
+                  className="flex items-center gap-2"
+                >
                   <TrendingUp className="w-4 h-4" />
                   Overview
                 </TabsTrigger>
-                <TabsTrigger value="invoices" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="invoices"
+                  className="flex items-center gap-2"
+                >
                   <FileText className="w-4 h-4" />
                   Invoices ({profile?.invoiceCount || 0})
                 </TabsTrigger>
@@ -122,7 +164,9 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
                 {/* Contact Info */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Contact Information</CardTitle>
+                    <CardTitle className="text-base">
+                      Contact Information
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-2 text-sm">
@@ -138,7 +182,12 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
                     {profile?.lastContactDate && (
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span>Last Contact: {new Date(profile.lastContactDate).toLocaleDateString()}</span>
+                        <span>
+                          Last Contact:{" "}
+                          {new Date(
+                            profile.lastContactDate
+                          ).toLocaleDateString()}
+                        </span>
                       </div>
                     )}
                   </CardContent>
@@ -151,7 +200,9 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
                       <CardDescription>Total Invoiced</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{((profile?.totalInvoiced || 0) / 100).toFixed(2)} DKK</div>
+                      <div className="text-2xl font-bold">
+                        {((profile?.totalInvoiced || 0) / 100).toFixed(2)} DKK
+                      </div>
                     </CardContent>
                   </Card>
                   <Card>
@@ -180,13 +231,19 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                      <CardTitle className="text-base">AI Customer Summary</CardTitle>
-                      <CardDescription>AI-generated insights and recommendations</CardDescription>
+                      <CardTitle className="text-base">
+                        AI Customer Summary
+                      </CardTitle>
+                      <CardDescription>
+                        AI-generated insights and recommendations
+                      </CardDescription>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => generateResume.mutate({ customerId: profile?.id || 0 })}
+                      onClick={() =>
+                        generateResume.mutate({ customerId: profile?.id || 0 })
+                      }
                       disabled={generateResume.isPending || !profile?.id}
                     >
                       {generateResume.isPending ? (
@@ -223,7 +280,9 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => syncBilly.mutate({ customerId: profile?.id || 0 })}
+                    onClick={() =>
+                      syncBilly.mutate({ customerId: profile?.id || 0 })
+                    }
                     disabled={syncBilly.isPending || !profile?.id}
                   >
                     {syncBilly.isPending ? (
@@ -243,31 +302,43 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
                   </div>
                 ) : invoices && invoices.length > 0 ? (
                   <div className="space-y-3">
-                    {invoices.map((invoice) => (
+                    {invoices.map(invoice => (
                       <Card key={invoice.id}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium">Invoice #{invoice.invoiceNo || invoice.billyInvoiceId}</span>
-                                <Badge variant={
-                                  invoice.status === "paid" ? "default" :
-                                  invoice.status === "overdue" ? "destructive" :
-                                  "secondary"
-                                }>
+                                <span className="font-medium">
+                                  Invoice #
+                                  {invoice.invoiceNo || invoice.billyInvoiceId}
+                                </span>
+                                <Badge
+                                  variant={
+                                    invoice.status === "paid"
+                                      ? "default"
+                                      : invoice.status === "overdue"
+                                        ? "destructive"
+                                        : "secondary"
+                                  }
+                                >
                                   {invoice.status}
                                 </Badge>
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                {invoice.entryDate && `Date: ${new Date(invoice.entryDate).toLocaleDateString()}`}
-                                {invoice.dueDate && ` • Due: ${new Date(invoice.dueDate).toLocaleDateString()}`}
+                                {invoice.entryDate &&
+                                  `Date: ${new Date(invoice.entryDate).toLocaleDateString()}`}
+                                {invoice.dueDate &&
+                                  ` • Due: ${new Date(invoice.dueDate).toLocaleDateString()}`}
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-lg font-semibold">{(invoice.amount / 100).toFixed(2)} DKK</div>
+                              <div className="text-lg font-semibold">
+                                {(invoice.amount / 100).toFixed(2)} DKK
+                              </div>
                               {invoice.paidAmount > 0 && (
                                 <div className="text-sm text-green-600">
-                                  Paid: {(invoice.paidAmount / 100).toFixed(2)} DKK
+                                  Paid: {(invoice.paidAmount / 100).toFixed(2)}{" "}
+                                  DKK
                                 </div>
                               )}
                             </div>
@@ -295,7 +366,9 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => syncGmail.mutate({ customerId: profile?.id || 0 })}
+                    onClick={() =>
+                      syncGmail.mutate({ customerId: profile?.id || 0 })
+                    }
                     disabled={syncGmail.isPending || !profile?.id}
                   >
                     {syncGmail.isPending ? (
@@ -315,19 +388,29 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
                   </div>
                 ) : emails && emails.length > 0 ? (
                   <div className="space-y-3">
-                    {emails.map((email) => (
-                      <Card key={email.id} className={!email.isRead ? "border-primary/50" : ""}>
+                    {emails.map(email => (
+                      <Card
+                        key={email.id}
+                        className={!email.isRead ? "border-primary/50" : ""}
+                      >
                         <CardContent className="p-4">
                           <div className="space-y-2">
                             <div className="flex items-start justify-between">
-                              <div className="font-medium">{email.subject || "(No Subject)"}</div>
-                              {!email.isRead && <Badge variant="default">Unread</Badge>}
+                              <div className="font-medium">
+                                {email.subject || "(No Subject)"}
+                              </div>
+                              {!email.isRead && (
+                                <Badge variant="default">Unread</Badge>
+                              )}
                             </div>
                             <div className="text-sm text-muted-foreground line-clamp-2">
                               {email.snippet}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {email.lastMessageDate && new Date(email.lastMessageDate).toLocaleString()}
+                              {email.lastMessageDate &&
+                                new Date(
+                                  email.lastMessageDate
+                                ).toLocaleString()}
                             </div>
                           </div>
                         </CardContent>
@@ -346,7 +429,10 @@ export default function CustomerProfile({ leadId, open, onClose }: CustomerProfi
                 <div className="text-center py-12 text-muted-foreground">
                   <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Dedicated customer chat coming soon...</p>
-                  <p className="text-sm mt-2">This will be a Friday conversation specific to this customer.</p>
+                  <p className="text-sm mt-2">
+                    This will be a Friday conversation specific to this
+                    customer.
+                  </p>
                 </div>
               </TabsContent>
             </ScrollArea>
