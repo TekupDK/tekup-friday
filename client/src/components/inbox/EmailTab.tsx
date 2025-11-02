@@ -3,10 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Search, Mail, ChevronDown, X, ArrowLeft, Reply, Forward, Trash2, Download } from "lucide-react";
+import { RefreshCw, Search, Mail, ChevronDown, X, ArrowLeft, Reply, Forward, Trash2, Download, Send, Plus, Archive } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Streamdown } from "streamdown";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface EmailMessage {
   id: string;
@@ -33,6 +36,13 @@ export default function EmailTab() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["TODAY", "YESTERDAY", "LAST_7_DAYS"]));
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [manualRefreshTrigger, setManualRefreshTrigger] = useState(0);
+  
+  // Compose/Reply dialog state
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeTo, setComposeTo] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [replyingTo, setReplyingTo] = useState<EmailMessage | null>(null);
   const [syncStatus, setSyncStatus] = useState<string>('');
   
   // Check if cache is valid
@@ -111,6 +121,110 @@ export default function EmailTab() {
     syncMutation.mutate();
   };
 
+  // Send email mutation
+  const sendMutation = trpc.inbox.email.send.useMutation({
+    onSuccess: () => {
+      console.log('[EmailTab] Email sent successfully');
+      setComposeOpen(false);
+      setComposeTo("");
+      setComposeSubject("");
+      setComposeBody("");
+      refetch();
+    },
+    onError: (error) => {
+      console.error('[EmailTab] Send failed:', error);
+      alert(`Failed to send email: ${error.message}`);
+    },
+  });
+
+  // Reply mutation
+  const replyMutation = trpc.inbox.email.reply.useMutation({
+    onSuccess: () => {
+      console.log('[EmailTab] Reply sent successfully');
+      setComposeOpen(false);
+      setReplyingTo(null);
+      setComposeTo("");
+      setComposeSubject("");
+      setComposeBody("");
+      refetch();
+    },
+    onError: (error) => {
+      console.error('[EmailTab] Reply failed:', error);
+      alert(`Failed to send reply: ${error.message}`);
+    },
+  });
+
+  // Mark as read mutation
+  const markAsReadMutation = trpc.inbox.email.markAsRead.useMutation({
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
+  // Archive mutation
+  const archiveMutation = trpc.inbox.email.archive.useMutation({
+    onSuccess: () => {
+      console.log('[EmailTab] Email archived');
+      setSelectedEmailId(null);
+      refetch();
+    },
+  });
+
+  // Compose new email
+  const handleCompose = () => {
+    setReplyingTo(null);
+    setComposeTo("");
+    setComposeSubject("");
+    setComposeBody("");
+    setComposeOpen(true);
+  };
+
+  // Reply to email
+  const handleReply = (email: EmailMessage) => {
+    setReplyingTo(email);
+    setComposeTo(email.from);
+    setComposeSubject(email.subject.startsWith('Re:') ? email.subject : `Re: ${email.subject}`);
+    setComposeBody(`\n\n--- Original Message ---\nFrom: ${email.from}\nDate: ${email.date}\n\n${email.body}`);
+    setComposeOpen(true);
+  };
+
+  // Send email
+  const handleSend = () => {
+    if (!composeTo || !composeSubject || !composeBody) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    if (replyingTo) {
+      replyMutation.mutate({
+        threadId: replyingTo.threadId,
+        messageId: replyingTo.id,
+        to: composeTo,
+        subject: composeSubject,
+        body: composeBody,
+      });
+    } else {
+      sendMutation.mutate({
+        to: composeTo,
+        subject: composeSubject,
+        body: composeBody,
+      });
+    }
+  };
+
+  // Toggle read status
+  const handleToggleRead = (messageId: string, currentIsRead: boolean) => {
+    markAsReadMutation.mutate({
+      messageId,
+      isRead: !currentIsRead,
+    });
+  };
+
+  // Archive email
+  const handleArchive = (messageId: string) => {
+    archiveMutation.mutate({ messageId });
+  };
+
   // Log email status
   console.log('[EmailTab] Emails:', displayEmails?.length || 0, 'Cached:', !!cachedEmails, 'Age:', cacheAge, 'min');
 
@@ -158,9 +272,24 @@ export default function EmailTab() {
     });
   }, [displayEmails]);
 
+  // Filter emails by search query
+  const filteredEmails = useMemo(() => {
+    if (!emailMessages || emailMessages.length === 0) return [];
+    if (!searchQuery.trim()) return emailMessages;
+
+    const query = searchQuery.toLowerCase();
+    return emailMessages.filter((email: EmailMessage) => 
+      email.subject?.toLowerCase().includes(query) ||
+      email.from?.toLowerCase().includes(query) ||
+      email.to?.toLowerCase().includes(query) ||
+      email.body?.toLowerCase().includes(query) ||
+      email.snippet?.toLowerCase().includes(query)
+    );
+  }, [emailMessages, searchQuery]);
+
   // Group emails by time period
   const groupedEmails = useMemo(() => {
-    if (!emailMessages || emailMessages.length === 0) return { TODAY: [], YESTERDAY: [], LAST_7_DAYS: [] };
+    if (!filteredEmails || filteredEmails.length === 0) return { TODAY: [], YESTERDAY: [], LAST_7_DAYS: [] };
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -175,7 +304,7 @@ export default function EmailTab() {
       LAST_7_DAYS: [],
     };
 
-    emailMessages.forEach((email: EmailMessage) => {
+    filteredEmails.forEach((email: EmailMessage) => {
       const emailDate = new Date(email.internalDate ? new Date(email.internalDate) : email.date);
 
       if (emailDate >= today) {
@@ -188,7 +317,7 @@ export default function EmailTab() {
     });
 
     return groups;
-  }, [emailMessages]);
+  }, [filteredEmails]);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => {
@@ -250,15 +379,32 @@ export default function EmailTab() {
           <Button variant="ghost" size="icon" onClick={() => setSelectedEmailId(null)}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div className="flex-1" />
-          <Button variant="ghost" size="icon">
+          <div className="flex-1">
+            <h3 className="font-medium truncate">{selectedEmail.subject}</h3>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleToggleRead(selectedEmail.id, !selectedEmail.unread)}
+            title={selectedEmail.unread ? "Mark as read" : "Mark as unread"}
+          >
+            <Mail className={`w-4 h-4 ${selectedEmail.unread ? 'fill-current' : ''}`} />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleReply(selectedEmail)}
+            title="Reply"
+          >
             <Reply className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon">
-            <Forward className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Trash2 className="w-4 h-4" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleArchive(selectedEmail.id)}
+            title="Archive"
+          >
+            <Archive className="w-4 h-4" />
           </Button>
         </div>
 
@@ -314,31 +460,40 @@ export default function EmailTab() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Search Bar */}
-      <div className="flex gap-2 items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search emails, contacts, labels..."
-            className="pl-10"
-          />
+    <>
+      <div className="space-y-4">
+        {/* Search Bar */}
+        <div className="flex gap-2 items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search emails, contacts, labels..."
+              className="pl-10"
+            />
+          </div>
+          <Button 
+            variant="default"
+            size="icon" 
+            onClick={handleCompose}
+            title="Compose new email"
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleSync} 
+            disabled={syncMutation.isPending}
+            title="Sync from Gmail"
+          >
+            <Download className={`w-4 h-4 ${syncMutation.isPending ? 'animate-bounce' : ''}`} />
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleManualRefresh} disabled={isFetching}>
+            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={handleSync} 
-          disabled={syncMutation.isPending}
-          title="Sync from Gmail"
-        >
-          <Download className={`w-4 h-4 ${syncMutation.isPending ? 'animate-bounce' : ''}`} />
-        </Button>
-        <Button variant="outline" size="icon" onClick={handleManualRefresh} disabled={isFetching}>
-          <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
-        </Button>
-      </div>
 
       {/* Cache Status */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -351,6 +506,7 @@ export default function EmailTab() {
           {syncStatus && <span className={syncStatus.includes('✅') ? 'text-green-500' : 'text-red-500'}>{syncStatus}</span>}
           {isFetching && <span className="text-blue-500">Loading...</span>}
         </div>
+      </div>
       </div>
 
       {/* Email Groups */}
@@ -414,6 +570,66 @@ export default function EmailTab() {
           </div>
         )}
       </div>
-    </div>
+
+      {/* Compose/Reply Dialog */}
+      <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{replyingTo ? 'Reply to Email' : 'Compose New Email'}</DialogTitle>
+            <DialogDescription>
+              {replyingTo ? `Replying to: ${replyingTo.from}` : 'Send a new email'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="to">To</Label>
+              <Input
+                id="to"
+                value={composeTo}
+                onChange={(e) => setComposeTo(e.target.value)}
+                placeholder="recipient@example.com"
+                disabled={!!replyingTo}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subject">Subject</Label>
+              <Input
+                id="subject"
+                value={composeSubject}
+                onChange={(e) => setComposeSubject(e.target.value)}
+                placeholder="Email subject"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="body">Message</Label>
+              <Textarea
+                id="body"
+                value={composeBody}
+                onChange={(e) => setComposeBody(e.target.value)}
+                placeholder="Write your message..."
+                rows={12}
+                className="resize-none"
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setComposeOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSend}
+                disabled={sendMutation.isPending || replyMutation.isPending}
+              >
+                <Send className="w-4 h-4 mr-2" />
+                {sendMutation.isPending || replyMutation.isPending ? 'Sending...' : 'Send'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
