@@ -349,22 +349,23 @@ export async function updateTaskStatus(
 
 export async function updateTask(
   id: number,
+  userId: number,
   data: Partial<Omit<InsertTask, "id" | "userId" | "createdAt">>
 ): Promise<Task | null> {
   const db = await getDb();
   if (!db) return null;
 
-  await db.update(tasks).set(data).where(eq(tasks.id, id));
+  await db.update(tasks).set(data).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
   
-  const updated = await db.select().from(tasks).where(eq(tasks.id, id)).limit(1);
+  const updated = await db.select().from(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId))).limit(1);
   return updated[0] || null;
 }
 
-export async function deleteTask(id: number): Promise<void> {
+export async function deleteTask(id: number, userId: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  await db.delete(tasks).where(eq(tasks.id, id));
+  await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
 }
 
 // ============= Analytics Functions =============

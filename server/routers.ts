@@ -301,12 +301,12 @@ export const appRouter = router({
         await updateTaskStatus(input.taskId, input.status);
         return { success: true };
       }),
-      update: protectedProcedure.input(z.object({ taskId: z.number(), title: z.string().optional(), description: z.string().optional(), dueDate: z.string().optional(), priority: z.enum(["low", "medium", "high", "urgent"]).optional(), status: z.enum(["todo", "in_progress", "done", "cancelled"]).optional() })).mutation(async ({ input }) => {
+      update: protectedProcedure.input(z.object({ taskId: z.number(), title: z.string().optional(), description: z.string().optional(), dueDate: z.string().optional(), priority: z.enum(["low", "medium", "high", "urgent"]).optional(), status: z.enum(["todo", "in_progress", "done", "cancelled"]).optional() })).mutation(async ({ ctx, input }) => {
         const { taskId, ...data } = input;
-        return updateTask(taskId, { ...data, dueDate: data.dueDate ? new Date(data.dueDate) : undefined });
+        return updateTask(taskId, ctx.user.id, { ...data, dueDate: data.dueDate ? new Date(data.dueDate) : undefined });
       }),
-      delete: protectedProcedure.input(z.object({ taskId: z.number() })).mutation(async ({ input }) => {
-        await deleteTask(input.taskId);
+      delete: protectedProcedure.input(z.object({ taskId: z.number() })).mutation(async ({ ctx, input }) => {
+        await deleteTask(input.taskId, ctx.user.id);
         return { success: true };
       }),
     }),

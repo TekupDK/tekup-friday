@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckSquare, Search, Filter, Calendar, Clock, Flag, Sparkles, Check, X, Eye, AlertCircle, Pencil, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -91,6 +92,7 @@ export default function TasksTab() {
   const [analyzingTask, setAnalyzingTask] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedTask, setEditedTask] = useState<any>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Filter tasks
   const filteredTasks = useMemo(() => {
@@ -196,10 +198,9 @@ export default function TasksTab() {
   const handleDeleteTask = async () => {
     if (!selectedTask) return;
     
-    if (!confirm("Er du sikker på, at du vil slette denne opgave?")) return;
-    
     try {
       await deleteTaskMutation.mutateAsync({ taskId: selectedTask.id });
+      setDeleteConfirmOpen(false);
     } catch (error) {
       console.error("❌ Failed to delete task:", error);
     }
@@ -548,7 +549,7 @@ Created: ${new Date(task.createdAt).toLocaleDateString('da-DK')}
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleDeleteTask}
+                        onClick={() => setDeleteConfirmOpen(true)}
                         disabled={deleteTaskMutation.isPending}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -670,6 +671,24 @@ Created: ${new Date(task.createdAt).toLocaleDateString('da-DK')}
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Er du sikker?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Denne handling kan ikke fortrydes. Dette vil permanent slette opgaven.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuller</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTask} disabled={deleteTaskMutation.isPending}>
+              Slet opgave
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
