@@ -76,6 +76,51 @@ export interface GmailMessage {
   date: string;
 }
 
+// ============================================================================
+// EMAIL CACHE - In-memory cache to reduce Gmail API calls
+// ============================================================================
+
+interface EmailCacheEntry {
+  data: GmailThread[];
+  timestamp: number;
+  query: string;
+  maxResults: number;
+}
+
+const EMAIL_CACHE = new Map<string, EmailCacheEntry>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(query: string, maxResults: number): string {
+  return `${query}:${maxResults}`;
+}
+
+function getCachedEmails(query: string, maxResults: number): GmailThread[] | null {
+  const key = getCacheKey(query, maxResults);
+  const entry = EMAIL_CACHE.get(key);
+  
+  if (!entry) return null;
+  
+  const age = Date.now() - entry.timestamp;
+  if (age > CACHE_TTL) {
+    EMAIL_CACHE.delete(key);
+    return null;
+  }
+  
+  console.log(`[Gmail Cache HIT] Query: ${query}, Age: ${Math.floor(age / 1000)}s`);
+  return entry.data;
+}
+
+function setCachedEmails(query: string, maxResults: number, data: GmailThread[]): void {
+  const key = getCacheKey(query, maxResults);
+  EMAIL_CACHE.set(key, {
+    data,
+    timestamp: Date.now(),
+    query,
+    maxResults,
+  });
+  console.log(`[Gmail Cache SET] Query: ${query}, Emails: ${data.length}`);
+}
+
 /**
  * Search Gmail threads
  */
@@ -83,6 +128,14 @@ export async function searchGmailThreads(params: {
   query: string;
   maxResults?: number;
 }): Promise<GmailThread[]> {
+  const maxResults = params.maxResults || 10;
+  
+  // Check cache first
+  const cached = getCachedEmails(params.query, maxResults);
+  if (cached) {
+    return cached;
+  }
+  
   try {
     const auth = await getAuthClient();
     const gmail = google.gmail({ version: 'v1', auth });
@@ -146,9 +199,23 @@ export async function searchGmailThreads(params: {
       });
     }
 
+    // Cache the successful result
+    setCachedEmails(params.query, maxResults, threads);
+    
     return threads;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error searching Gmail:', error);
+    
+    // If rate limited, try to return cached data even if expired
+    if (error?.message?.includes('rate limit') || error?.code === 429) {
+      const key = getCacheKey(params.query, maxResults);
+      const expiredCache = EMAIL_CACHE.get(key);
+      if (expiredCache) {
+        console.log(`[Gmail Cache FALLBACK] Returning expired cache due to rate limit`);
+        return expiredCache.data;
+      }
+    }
+    
     throw error;
   }
 }

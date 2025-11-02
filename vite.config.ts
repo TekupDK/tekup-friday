@@ -4,7 +4,30 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { defineConfig } from "vite";
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin()];
+const replacePlaceholdersPlugin = () => ({
+  name: "html-placeholder-replacer",
+  transformIndexHtml(html: string) {
+    const env = process.env;
+    const title = env.VITE_APP_TITLE || "Friday AI Chat";
+    const logo = env.VITE_APP_LOGO || "/logo.png";
+    const analyticsEndpoint = env.VITE_ANALYTICS_ENDPOINT || "";
+    const analyticsWebsiteId = env.VITE_ANALYTICS_WEBSITE_ID || "";
+
+    let out = html
+      .replace(/%VITE_APP_TITLE%/g, title)
+      .replace(/%VITE_APP_LOGO%/g, logo)
+      .replace(/%VITE_ANALYTICS_ENDPOINT%/g, analyticsEndpoint)
+      .replace(/%VITE_ANALYTICS_WEBSITE_ID%/g, analyticsWebsiteId);
+
+    // If analytics variables are not provided, remove any umami analytics script tag
+    if (!analyticsEndpoint || !analyticsWebsiteId) {
+      out = out.replace(/\n?\s*<script[^>]*umami[^>]*><\/script>\s*/gi, "\n");
+    }
+    return out;
+  },
+});
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), replacePlaceholdersPlugin()];
 
 export default defineConfig({
   plugins,

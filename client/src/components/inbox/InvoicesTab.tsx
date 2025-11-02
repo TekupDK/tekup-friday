@@ -34,6 +34,16 @@ export default function InvoicesTab() {
   const [showCommentInput, setShowCommentInput] = useState(false);
   const submitFeedbackMutation = trpc.chat.submitAnalysisFeedback.useMutation();
 
+  // Log invoice data with customer names
+  console.log('[InvoicesTab] Total invoices:', invoices?.length || 0);
+  if (invoices && invoices.length > 0) {
+    const withNames = invoices.filter((i: any) => i.customerName).length;
+    console.log('[InvoicesTab] Invoices with customer names:', withNames, '/', invoices.length);
+    if (withNames > 0) {
+      console.log('[InvoicesTab] Sample:', invoices.find((i: any) => i.customerName)?.customerName);
+    }
+  }
+
   // Filter invoices based on search and status
   const filteredInvoices = useMemo(() => {
     if (!invoices) return [];
@@ -43,6 +53,7 @@ export default function InvoicesTab() {
         searchQuery === "" ||
         invoice.invoiceNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         invoice.contactId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        invoice.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         invoice.id?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesStatus =
@@ -271,12 +282,16 @@ Please analyze this invoice and provide:
                       {invoice.invoiceNo ? `Invoice #${invoice.invoiceNo}` : `Draft ${invoice.id.slice(0, 8)}`}
                     </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Customer: {invoice.contactId}
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Kunde:</span>{' '}
+                    <span className="font-medium">{invoice.customerName || invoice.contactId}</span>
+                    {invoice.customerName && invoice.contactId && (
+                      <span className="text-xs text-muted-foreground ml-2">ID: {invoice.contactId.slice(0, 10)}...</span>
+                    )}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Date: {new Date(invoice.entryDate).toLocaleDateString('da-DK')} •
-                    Payment terms: {invoice.paymentTermsDays} days
+                    📅 {new Date(invoice.entryDate).toLocaleDateString('da-DK')} •
+                    ⏰ Betalingsfrist: {invoice.paymentTermsDays} dage
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Search, Mail, ChevronDown, X, ArrowLeft, Reply, Forward, Trash2 } from "lucide-react";
+import { RefreshCw, Search, Mail, ChevronDown, X, ArrowLeft, Reply, Forward, Trash2, Download } from "lucide-react";
 import { useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Streamdown } from "streamdown";
@@ -24,25 +24,102 @@ interface EmailMessage {
   sender: string;
 }
 
+const CACHE_KEY = 'friday_emails_cache';
+const CACHE_TIMESTAMP_KEY = 'friday_emails_timestamp';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export default function EmailTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["TODAY", "YESTERDAY", "LAST_7_DAYS"]));
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
+  const [manualRefreshTrigger, setManualRefreshTrigger] = useState(0);
+  const [syncStatus, setSyncStatus] = useState<string>('');
+  
+  // Check if cache is valid
+  const isCacheValid = () => {
+    try {
+      const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+      if (!timestamp) return false;
+      const age = Date.now() - parseInt(timestamp);
+      return age < CACHE_TTL;
+    } catch {
+      return false;
+    }
+  };
 
-  const { data: emails, isLoading, isFetching, refetch } = trpc.inbox.email.list.useQuery(
+  // Load cached emails on mount
+  const getCachedEmails = () => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const [cachedEmails, setCachedEmails] = useState<any[] | null>(getCachedEmails());
+  const shouldFetch = !isCacheValid() || manualRefreshTrigger > 0;
+
+  const { data: emails, isLoading, isFetching, refetch, error } = trpc.inbox.email.list.useQuery(
     { maxResults: 50 },
     {
-      refetchInterval: 30000, // Auto-refresh every 30 seconds
-      refetchIntervalInBackground: true,
+      enabled: shouldFetch, // Only fetch if cache is invalid or manual refresh
+      refetchInterval: false, // No automatic refetch - we control it manually
+      refetchIntervalInBackground: false,
+      retry: false,
+      onSuccess: (data) => {
+        // Save to cache on successful fetch
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+          localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+          setCachedEmails(data);
+        } catch (e) {
+          console.error('[EmailTab] Failed to cache emails:', e);
+        }
+      },
     }
   );
 
+  // Use cached emails if available, otherwise use fresh data
+  const displayEmails = cachedEmails || emails;
+  const lastFetchTime = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+  const cacheAge = lastFetchTime ? Math.floor((Date.now() - parseInt(lastFetchTime)) / 1000 / 60) : null;
+
+  // Sync mutation
+  const syncMutation = trpc.inbox.email.sync.useMutation({
+    onSuccess: (data) => {
+      console.log(`✅ Synced ${data.synced} emails from Gmail`);
+      setSyncStatus(`✅ Synced ${data.synced} emails`);
+      setTimeout(() => setSyncStatus(''), 3000);
+      refetch(); // Refresh the list after sync
+    },
+    onError: (error) => {
+      console.error('❌ Sync failed:', error.message);
+      setSyncStatus(`❌ Sync failed: ${error.message}`);
+      setTimeout(() => setSyncStatus(''), 5000);
+    },
+  });
+
+  // Manual refresh handler
+  const handleManualRefresh = () => {
+    setManualRefreshTrigger(prev => prev + 1);
+    refetch();
+  };
+
+  // Sync from Gmail handler
+  const handleSync = () => {
+    syncMutation.mutate();
+  };
+
+  // Log email status
+  console.log('[EmailTab] Emails:', displayEmails?.length || 0, 'Cached:', !!cachedEmails, 'Age:', cacheAge, 'min');
+
   // Transform GmailThread[] to flat message list for display
   const emailMessages = useMemo<EmailMessage[]>(() => {
-    if (!emails) return [];
+    if (!displayEmails) return [];
 
     // Flatten threads into messages, using the latest message from each thread
-    return emails.flatMap((thread: any): EmailMessage[] => {
+    return displayEmails.flatMap((thread: any): EmailMessage[] => {
       if (!thread.messages || thread.messages.length === 0) {
         // If no messages, create a synthetic message from thread data
         return [{
@@ -79,7 +156,7 @@ export default function EmailTab() {
         sender: lastMessage.from || '', // Alias for from
       }];
     });
-  }, [emails]);
+  }, [displayEmails]);
 
   // Group emails by time period
   const groupedEmails = useMemo(() => {
@@ -125,12 +202,34 @@ export default function EmailTab() {
     });
   };
 
-  if (isLoading) {
+  // Only show loading skeleton if no cached data available
+  if (isLoading && !cachedEmails) {
     return (
       <div className="space-y-3">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="h-20 bg-muted/50 rounded-lg animate-pulse" />
         ))}
+      </div>
+    );
+  }
+
+  // Show error state for rate limits only if no cached data
+  if (error && !cachedEmails) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <Mail className="w-16 h-16 text-muted-foreground opacity-50" />
+        <div className="text-center space-y-2">
+          <h3 className="font-semibold text-lg">Gmail API Rate Limit</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            {error.message.includes('rate limit') 
+              ? 'Gmail API rate limit reached. Please wait a few minutes and try again.'
+              : error.message}
+          </p>
+          <Button onClick={handleManualRefresh} variant="outline" className="mt-4">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
@@ -227,10 +326,31 @@ export default function EmailTab() {
             className="pl-10"
           />
         </div>
-        <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={handleSync} 
+          disabled={syncMutation.isPending}
+          title="Sync from Gmail"
+        >
+          <Download className={`w-4 h-4 ${syncMutation.isPending ? 'animate-bounce' : ''}`} />
+        </Button>
+        <Button variant="outline" size="icon" onClick={handleManualRefresh} disabled={isFetching}>
           <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
         </Button>
-        {isFetching && <span className="text-xs text-muted-foreground">Syncing...</span>}
+      </div>
+
+      {/* Cache Status */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          {cacheAge !== null ? (
+            cacheAge === 0 ? 'Just updated' : `Last updated ${cacheAge} ${cacheAge === 1 ? 'minute' : 'minutes'} ago`
+          ) : 'No cached data'}
+        </span>
+        <div className="flex items-center gap-2">
+          {syncStatus && <span className={syncStatus.includes('✅') ? 'text-green-500' : 'text-red-500'}>{syncStatus}</span>}
+          {isFetching && <span className="text-blue-500">Loading...</span>}
+        </div>
       </div>
 
       {/* Email Groups */}

@@ -6,6 +6,7 @@ import {
   conversations,
   messages,
   emailThreads,
+  emailMessages,
   invoices,
   calendarEvents,
   leads,
@@ -14,6 +15,7 @@ import {
   type Conversation,
   type Message,
   type EmailThread,
+  type EmailMessage,
   type Invoice,
   type CalendarEvent,
   type Lead,
@@ -21,6 +23,7 @@ import {
   type InsertConversation,
   type InsertMessage,
   type InsertEmailThread,
+  type InsertEmailMessage,
   type InsertInvoice,
   type InsertCalendarEvent,
   type InsertLead,
@@ -375,4 +378,90 @@ export async function getAnalyticsEvents(
     .from(analyticsEvents)
     .where(and(...conditions))
     .orderBy(desc(analyticsEvents.createdAt));
+}
+
+// ============= Email Functions =============
+
+/**
+ * Save email messages to database
+ */
+export async function saveEmailMessages(emails: InsertEmailMessage[]): Promise<void> {
+  const db = await getDb();
+  if (!db || emails.length === 0) return;
+
+  try {
+    // Insert or update on duplicate gmailMessageId
+    for (const email of emails) {
+      await db
+        .insert(emailMessages)
+        .values(email)
+        .onDuplicateKeyUpdate({
+          set: {
+            subject: email.subject,
+            bodyText: email.bodyText,
+            snippet: email.snippet,
+            isRead: email.isRead,
+            isStarred: email.isStarred,
+            labels: email.labels,
+            updatedAt: new Date(),
+          },
+        });
+    }
+    console.log(`[DB] Saved ${emails.length} email messages`);
+  } catch (error) {
+    console.error('[DB] Error saving emails:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all emails for a user
+ */
+export async function getUserEmails(
+  userId: number,
+  limit: number = 50
+): Promise<EmailMessage[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(emailMessages)
+    .where(eq(emailMessages.userId, userId))
+    .orderBy(desc(emailMessages.date))
+    .limit(limit);
+}
+
+/**
+ * Get email by Gmail message ID
+ */
+export async function getEmailByGmailId(
+  gmailMessageId: string
+): Promise<EmailMessage | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const results = await db
+    .select()
+    .from(emailMessages)
+    .where(eq(emailMessages.gmailMessageId, gmailMessageId))
+    .limit(1);
+
+  return results[0] || null;
+}
+
+/**
+ * Mark email as read
+ */
+export async function markEmailAsRead(
+  gmailMessageId: string,
+  isRead: boolean = true
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(emailMessages)
+    .set({ isRead, updatedAt: new Date() })
+    .where(eq(emailMessages.gmailMessageId, gmailMessageId));
 }

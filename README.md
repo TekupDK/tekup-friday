@@ -1,6 +1,6 @@
 # Friday AI Chat
 
-**Intelligent AI assistant for Rendetalje.dk** - A production-ready chat interface with unified inbox, multi-AI support, and business automation.
+**Intelligent AI assistant for Rendetalje.dk** - A production-ready chat interface with unified inbox, OpenAI integration, and business automation.
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/TekupDK/tekup-friday/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -9,12 +9,12 @@
 
 Friday is a Shortwave.ai-inspired chat interface built specifically for Rendetalje.dk cleaning business operations. It combines AI-powered conversation with real-time inbox management, calendar bookings, invoice handling, and lead tracking.
 
-**Live Demo:** [https://3000-ijhgukurr5hhbd1h5s5sk-e0f84be7.manusvm.computer](https://3000-ijhgukurr5hhbd1h5s5sk-e0f84be7.manusvm.computer)
+**No external dependencies** - Runs entirely on your infrastructure with direct OpenAI API integration.
 
 ## ✨ Features
 
-### 🤖 Multi-AI Chat Interface
-- **4 AI Models**: Gemini 2.5 Flash, Claude 3.5 Sonnet, GPT-4o, Manus AI
+### 🤖 AI Chat Interface
+- **OpenAI GPT-4o-mini**: Fast, cost-effective AI responses
 - **Conversation Memory**: Full chat history context for better responses
 - **Voice Input**: Web Speech API integration (Danish language)
 - **Markdown Rendering**: Rich text formatting with syntax highlighting
@@ -77,25 +77,51 @@ Critical business logic embedded in AI system prompt:
 - **MySQL/TiDB** - Relational database
 
 ### Integrations
+- **OpenAI API** - Direct GPT-4o-mini integration
 - **Google API** - Gmail + Calendar (domain-wide delegation)
-- **Billy.dk** - Invoice management via billy-mcp
-- **Manus Forge** - Built-in AI services
-- **OpenAI** - GPT-4o model
-- **Anthropic** - Claude 3.5 Sonnet
-- **Google Gemini** - Gemini 2.5 Flash
+- **Billy.dk** - Invoice management API
 
 ## 📦 Installation
 
 ### Prerequisites
-- Node.js 22.x
-- pnpm 9.x
-- MySQL/TiDB database
-- Google Service Account with domain-wide delegation
-- Billy.dk API key
-- OpenAI API key
-- Gemini API key
+- Docker & Docker Compose (recommended) OR Node.js 22.x + pnpm
+- MySQL/TiDB database (included in Docker Compose or use remote TiDB)
+- OpenAI API key ([get one here](https://platform.openai.com/account/api-keys))
+- Google Service Account with domain-wide delegation (for Gmail/Calendar)
+- Billy.dk API key (for invoice integration)
 
-### Setup
+### Quick Start with Docker (Recommended)
+
+1. **Clone repository**
+```bash
+git clone https://github.com/TekupDK/tekup-friday.git
+cd tekup-friday
+```
+
+2. **Configure environment**
+```bash
+cp env.template.txt .env
+# Edit .env and set:
+# - DATABASE_URL (use provided TiDB or local MySQL)
+# - OPENAI_API_KEY (get from OpenAI platform)
+# - JWT_SECRET (any secure random string)
+# - OWNER_OPEN_ID (any stable string for admin user ID)
+# - Google and Billy credentials if using those features
+```
+
+3. **Build and run**
+```bash
+docker-compose build
+docker-compose up -d
+```
+
+4. **Access the app**
+```bash
+# App runs on http://localhost:3000
+# Visit http://localhost:3000/login to auto-login in dev mode
+```
+
+### Local Development (without Docker)
 
 1. **Clone repository**
 ```bash
@@ -108,21 +134,10 @@ cd tekup-friday
 pnpm install
 ```
 
-3. **Configure environment variables**
+3. **Configure environment**
 ```bash
-# Copy example env file
-cp .env.example .env
-
-# Required variables:
-DATABASE_URL=mysql://...
-GOOGLE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
-GOOGLE_IMPERSONATED_USER=info@rendetalje.dk
-GOOGLE_CALENDAR_ID=your-calendar-id
-BILLY_API_KEY=your-billy-api-key
-BILLY_ORGANIZATION_ID=your-org-id
-GEMINI_API_KEY=your-gemini-key
-OPENAI_API_KEY=your-openai-key
-JWT_SECRET=your-secret
+cp env.template.txt .env
+# Edit .env with your credentials (same as Docker setup above)
 ```
 
 4. **Push database schema**
@@ -137,11 +152,29 @@ pnpm dev
 
 Server runs on `http://localhost:3000`
 
+## 🔐 Authentication
+
+Friday uses **local session-based authentication** with JWT tokens:
+
+- **Development**: Visit `/login` to auto-login with `OWNER_OPEN_ID`
+- **Production**: Set `ALLOW_DEV_LOGIN=true` in docker-compose to enable `/login` endpoint
+- No external OAuth dependencies - fully self-hosted
+- Session cookies expire after 1 year
+
+## 🤖 AI Configuration
+
+Friday uses **OpenAI GPT-4o-mini** directly:
+
+1. Get API key from [OpenAI Platform](https://platform.openai.com/account/api-keys)
+2. Set `OPENAI_API_KEY` in `.env`
+3. Model configured in `server/_core/llm.ts` (currently `gpt-4o-mini`)
+4. Change model by editing `payload.model` in `invokeLLM()` function
+
 ## 🗄️ Database Schema
 
 9 tables for complete business operations:
 
-- **users** - Authentication (Manus OAuth)
+- **users** - Local authentication with JWT sessions
 - **conversations** - Chat threads
 - **messages** - Chat messages with AI responses
 - **email_threads** - Gmail integration
@@ -152,6 +185,41 @@ Server runs on `http://localhost:3000`
 - **analytics_events** - User tracking
 
 See `drizzle/schema.ts` for full schema.
+
+## 🚀 Deployment
+
+### Docker Production
+
+```bash
+# Build production image
+docker-compose build
+
+# Run with production settings
+docker-compose up -d
+
+# Check logs
+docker logs -f friday-ai
+
+# Check health
+curl http://localhost:3000/
+```
+
+### Environment Variables for Production
+
+Required:
+- `DATABASE_URL` - MySQL/TiDB connection string with URL-encoded SSL
+- `OPENAI_API_KEY` - Valid OpenAI API key
+- `JWT_SECRET` - Strong random string for session signing
+- `VITE_APP_ID` - App identifier (default: friday-ai)
+- `OWNER_OPEN_ID` - Admin user identifier
+- `ALLOW_DEV_LOGIN=true` - Enable /login endpoint in production
+
+Optional (for full features):
+- `GOOGLE_SERVICE_ACCOUNT_KEY` - JSON for Gmail/Calendar
+- `GOOGLE_IMPERSONATED_USER` - Email to impersonate
+- `GOOGLE_CALENDAR_ID` - Calendar to use
+- `BILLY_API_KEY` - Billy.dk integration
+- `BILLY_ORGANIZATION_ID` - Billy organization
 
 ## 🔧 Development
 

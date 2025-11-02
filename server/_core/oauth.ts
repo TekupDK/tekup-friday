@@ -13,8 +13,8 @@ function getQueryParam(req: Request, key: string): string | undefined {
 export function registerOAuthRoutes(app: Express) {
   // Development mode auto-login
   app.get("/login", async (req: Request, res: Response) => {
-    // Only allow in development mode
-    if (ENV.isProduction) {
+    // Only allow in development mode, unless explicitly allowed via env flag
+    if (ENV.isProduction && !ENV.allowDevLogin) {
       res.status(404).send("Not found");
       return;
     }
@@ -25,11 +25,16 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     try {
-      const user = await db.getUserByOpenId(ENV.ownerOpenId);
-      
+      let user = await db.getUserByOpenId(ENV.ownerOpenId);
       if (!user) {
-        res.status(404).send("Owner user not found in database");
-        return;
+        await db.upsertUser({
+          openId: ENV.ownerOpenId,
+          name: "Owner",
+          email: null,
+          loginMethod: "local",
+          lastSignedIn: new Date(),
+        });
+        user = await db.getUserByOpenId(ENV.ownerOpenId);
       }
 
       // Create session token for the owner

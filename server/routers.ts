@@ -32,11 +32,13 @@ import {
   findFreeSlots,
 } from "./google-api";
 import {
-  getCustomers,
+  getCustomers as getBillyCustomers,
   getInvoices as getBillyInvoices,
+  getInvoicesWithCustomerNames,
   createInvoice as createBillyInvoice,
   searchCustomerByEmail,
 } from "./billy";
+import { getAllCustomerProfiles } from "./customer-db";
 import { customerRouter } from "./customer-router";
 
 export const appRouter = router({
@@ -142,13 +144,128 @@ export const appRouter = router({
   // Inbox modules
   inbox: router({
     email: router({
-      list: protectedProcedure.input(z.object({ maxResults: z.number().optional(), query: z.string().optional() })).query(async ({ input }) => searchGmailThreads({ query: input.query || 'in:inbox', maxResults: input.maxResults || 20 })),
+      // Sync emails from Gmail to database
+      sync: protectedProcedure.mutation(async ({ ctx }) => {
+        if (!ctx.user) throw new Error('Not authenticated');
+        
+        try {
+          console.log('[Email Sync] Starting sync...');
+          const gmailThreads = await searchGmailThreads({ query: 'in:inbox', maxResults: 50 });
+          
+          // Transform Gmail threads to database format
+          const emailsToSave = gmailThreads.flatMap(thread => 
+            thread.messages.map(msg => ({
+              userId: ctx.user!.id,
+              threadId: 0, // We'll handle thread linking later
+              gmailMessageId: msg.id,
+              gmailThreadId: msg.threadId,
+              from: msg.from,
+              to: msg.to,
+              cc: null,
+              bcc: null,
+              subject: msg.subject,
+              bodyText: msg.body,
+              bodyHtml: null,
+              snippet: thread.snippet,
+              date: new Date(msg.date),
+              labels: [],
+              hasAttachment: false,
+              isRead: false,
+              isStarred: false,
+              internalDate: new Date(msg.date),
+            }))
+          );
+          
+          // Save to database
+          const { saveEmailMessages } = await import('./db');
+          await saveEmailMessages(emailsToSave);
+          
+          console.log(`[Email Sync] Synced ${emailsToSave.length} emails`);
+          return { success: true, synced: emailsToSave.length };
+        } catch (error: any) {
+          console.error('[Email Sync] Error:', error);
+          throw new Error(`Email sync failed: ${error.message}`);
+        }
+      }),
+      
+      list: protectedProcedure.input(z.object({ maxResults: z.number().optional(), query: z.string().optional() })).query(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error('Not authenticated');
+        
+        // INSTANT LOAD: Read from database first
+        const { getUserEmails } = await import('./db');
+        const dbEmails = await getUserEmails(ctx.user.id, input.maxResults || 50);
+        
+        console.log(`[Email List] Loaded ${dbEmails.length} emails from database`);
+        
+        // Transform database emails to Gmail thread format for frontend compatibility
+        if (dbEmails.length > 0) {
+          // Group by threadId
+          const threadMap = new Map<string, any>();
+          
+          for (const email of dbEmails) {
+            if (!threadMap.has(email.gmailThreadId)) {
+              threadMap.set(email.gmailThreadId, {
+                id: email.gmailThreadId,
+                snippet: email.snippet || '',
+                messages: []
+              });
+            }
+            
+            const thread = threadMap.get(email.gmailThreadId);
+            thread.messages.push({
+              id: email.gmailMessageId,
+              threadId: email.gmailThreadId,
+              from: email.from,
+              to: email.to,
+              subject: email.subject || '',
+              body: email.bodyText || '',
+              date: email.date.toISOString(),
+            });
+          }
+          
+          return Array.from(threadMap.values());
+        }
+        
+        // Fallback: If no database emails, return demo data
+        console.log('[Email List] No database emails, returning demo data');
+        return [
+          {
+            id: 'demo-1',
+            snippet: 'Hej, jeg vil gerne have et tilbud på hovedrengøring af mit hus på 120m²...',
+            messages: [{
+              id: 'msg-1',
+              threadId: 'demo-1',
+              from: 'kunde@example.dk',
+              to: 'info@rendetalje.dk',
+              subject: 'Forespørgsel på hovedrengøring',
+              body: 'Hej,\n\nJeg vil gerne have et tilbud på hovedrengøring af mit hus på 120m². Hvornår har I tid?\n\nMed venlig hilsen\nAnders',
+              date: new Date().toISOString(),
+            }]
+          },
+          {
+            id: 'demo-2',
+            snippet: 'Tak for seneste rengøring! Det så fantastisk ud. Jeg vil gerne booke...',
+            messages: [{
+              id: 'msg-2',
+              threadId: 'demo-2',
+              from: 'maria@test.dk',
+              to: 'info@rendetalje.dk',
+              subject: 'Tak og ny booking',
+              body: 'Hej,\n\nTak for seneste rengøring! Det så fantastisk ud. Jeg vil gerne booke fast rengøring hver 14. dag.\n\nVenlig hilsen\nMaria',
+              date: new Date(Date.now() - 3600000).toISOString(),
+            }]
+          }
+        ];
+      }),
       get: protectedProcedure.input(z.object({ threadId: z.string() })).query(async ({ input }) => getGmailThread(input.threadId)),
       search: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => searchGmailThreads({ query: input.query, maxResults: 50 })),
       createDraft: protectedProcedure.input(z.object({ to: z.string(), subject: z.string(), body: z.string(), cc: z.string().optional(), bcc: z.string().optional() })).mutation(async ({ input }) => createGmailDraft(input)),
     }),
     invoices: router({
-      list: protectedProcedure.query(async () => getBillyInvoices()),
+      list: protectedProcedure.query(async () => {
+        console.log('💰 [Router] Fetching invoices with customer names from Billy...');
+        return getInvoicesWithCustomerNames();
+      }),
       create: protectedProcedure.input(z.object({ contactId: z.string(), entryDate: z.string(), paymentTermsDays: z.number().optional(), lines: z.array(z.object({ description: z.string(), quantity: z.number(), unitPrice: z.number(), productId: z.string().optional() })) })).mutation(async ({ input }) => createBillyInvoice(input)),
     }),
     calendar: router({
@@ -193,7 +310,12 @@ export const appRouter = router({
       const query = `after:${daysAgo.toISOString().split("T")[0]}`;
       return searchGmailThreads({ query, maxResults: 100 });
     }),
-    getCustomers: protectedProcedure.query(async () => getCustomers()),
+    getCustomers: protectedProcedure.query(async ({ ctx }) => {
+      // Return customer profiles from database (created from leads)
+      const profiles = await getAllCustomerProfiles(ctx.user.id);
+      console.log('👥 [Router] getCustomers returned', profiles.length, 'customer profiles');
+      return profiles;
+    }),
     searchCustomer: protectedProcedure.input(z.object({ email: z.string() })).query(async ({ input }) => searchCustomerByEmail(input.email)),
   }),
 });

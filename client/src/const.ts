@@ -4,25 +4,5 @@ export const APP_TITLE = "Friday AI Chat";
 
 export const APP_LOGO = "/logo.png";
 
-// Generate login URL at runtime so redirect URI reflects the current origin.
-export const getLoginUrl = () => {
-  const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;
-  const appId = import.meta.env.VITE_APP_ID;
-  
-  // If OAuth is not configured, return a placeholder URL
-  if (!oauthPortalUrl) {
-    console.warn('VITE_OAUTH_PORTAL_URL is not configured');
-    return '/login';
-  }
-  
-  const redirectUri = `${window.location.origin}/api/oauth/callback`;
-  const state = btoa(redirectUri);
-
-  const url = new URL(`${oauthPortalUrl}/app-auth`);
-  url.searchParams.set("appId", appId);
-  url.searchParams.set("redirectUri", redirectUri);
-  url.searchParams.set("state", state);
-  url.searchParams.set("type", "signIn");
-
-  return url.toString();
-};
+// Always use local login route to remove external Manus dependency
+export const getLoginUrl = () => '/login';

@@ -410,6 +410,75 @@ import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@/types";
 ```
 
+## Invoices Tab — UX & Observability Patterns
+
+This section documents the conventions and a small, incremental improvement plan for `InvoicesTab` to align with the patterns used across Inbox modules (Leads, Calendar).
+
+### Goals
+- Improve scannability and prioritization (color accents, compact stats)
+- Enhance filtering and sorting to handle larger lists efficiently
+- Provide export and quick navigation to customer context
+- Maintain robust logging for debugging and operations
+
+### Logging Conventions
+- Always log a high-level summary when data loads:
+  - `[InvoicesTab] Total invoices: <n>`
+  - `[InvoicesTab] Invoices with customer names: <m>/<n>`
+- When filters or sorting change, log:
+  - `[InvoicesTab] Filters active: { status, amount, dateRange, sortBy }`
+  - `[InvoicesTab] Filtered result: <n>`
+
+### UI Conventions
+- Border-left 4px accent on cards based on `state`:
+  - `paid`: green, `sent`: blue, `approved`: amber, `draft`: gray, `overdue`: red
+- Compact stats header at the top with key KPIs:
+  - Total, Paid, Sent, Draft, Overdue counts
+  - Total Amount Due (sum of unpaid), Overdue Amount
+- Use `ScrollArea` around long lists for smoother scrolling
+- Keep actions visible: Analyze (AI), Export CSV, Open Customer Profile (if resolvable)
+
+### Small Tasks (Incremental Plan)
+1) Stats summary header
+  - Add cards for: Total, Paid, Sent, Draft, Overdue, Amount Due, Overdue Amount
+  - Acceptance: Stats reflect total dataset by default (can add toggle to show filtered later)
+
+2) Border-left accent by state
+  - 4px left border colored by invoice state for quick scanning
+  - Acceptance: Colors match the palette used elsewhere (Leads/Calendar)
+
+3) ScrollArea for long lists
+  - Wrap invoice list in `ScrollArea` with responsive height
+  - Acceptance: No layout shift; scroll behaves smoothly on long lists
+
+4) Sort dropdown
+  - Options: Entry Date (desc default), Amount, Status, Customer Name
+  - Acceptance: Visible active sort; stable ordering changes with selection
+
+5) Amount and date filters
+  - Min/Max amount inputs and a date range picker for Entry Date
+  - Acceptance: Filters compose with search and status; logs reflect active filters
+
+6) Export filtered CSV
+  - Export current filtered set (not just individual invoice) to CSV
+  - Acceptance: File contains headers and one row per invoice with key fields
+
+7) Link to Customer Profile
+  - Add a button on each invoice row to open customer context (if resolvable)
+  - Strategy: resolve by `customerName`/`contactId` -> profile; fallback: search dialog
+  - Acceptance: Opens profile modal or provides a clear fallback
+
+### Acceptance Criteria (Global)
+- No TypeScript errors; UI behaves responsively
+- Logs are concise and informative; no spam
+- Filters, search, and sorting compose without surprises
+- Exported data matches current list view when applicable
+
+### Rollout Notes
+- Prefer phased PRs (one or two tasks per PR) to minimize conflicts
+- Keep styles consistent with shadcn/ui and existing components
+- Avoid backend changes unless strictly necessary; compute KPIs client-side first
+
+
 ## Database Management
 
 ### Schema Modifications

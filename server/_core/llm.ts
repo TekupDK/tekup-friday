@@ -209,13 +209,11 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+// We now call providers directly (no Manus Forge)
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
 const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
+  if (!ENV.openAiApiKey) {
     throw new Error("OPENAI_API_KEY is not configured");
   }
 };
@@ -268,55 +266,48 @@ const normalizeResponseFormat = ({
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   assertApiKey();
 
-  const {
-    messages,
-    tools,
-    toolChoice,
-    tool_choice,
-    outputSchema,
-    output_schema,
-    responseFormat,
-    response_format,
-  } = params;
+  const { messages, tools, toolChoice, tool_choice } = params;
 
-  const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
-    messages: messages.map(normalizeMessage),
+  // Map our Message format to OpenAI format
+  const mapContentPart = (part: MessageContent): any => {
+    if (typeof part === "string") return { type: "text", text: part };
+    if ((part as any).type === "text") return part;
+    if ((part as any).type === "image_url") return part;
+    if ((part as any).type === "file_url") {
+      // Minimal support: include the URL as text to avoid provider-specific handling
+      return { type: "text", text: `File: ${(part as FileContent).file_url.url}` };
+    }
+    return { type: "text", text: JSON.stringify(part) };
+  };
+
+  const openAiMessages = messages.map(m => {
+    const normalized = normalizeMessage(m);
+    if (typeof normalized.content === "string") {
+      return { role: normalized.role, content: normalized.content } as any;
+    }
+    const contentArr = (normalized.content as any[]).map(mapContentPart);
+    return { role: normalized.role, content: contentArr } as any;
+  });
+
+  const payload: any = {
+    model: "gpt-4o-mini",
+    messages: openAiMessages,
   };
 
   if (tools && tools.length > 0) {
     payload.tools = tools;
   }
 
-  const normalizedToolChoice = normalizeToolChoice(
-    toolChoice || tool_choice,
-    tools
-  );
+  const normalizedToolChoice = normalizeToolChoice(toolChoice || tool_choice, tools);
   if (normalizedToolChoice) {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
-  payload.thinking = {
-    "budget_tokens": 128
-  }
-
-  const normalizedResponseFormat = normalizeResponseFormat({
-    responseFormat,
-    response_format,
-    outputSchema,
-    output_schema,
-  });
-
-  if (normalizedResponseFormat) {
-    payload.response_format = normalizedResponseFormat;
-  }
-
-  const response = await fetch(resolveApiUrl(), {
+  const response = await fetch(OPENAI_API_URL, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      Authorization: `Bearer ${ENV.openAiApiKey}`,
     },
     body: JSON.stringify(payload),
   });
@@ -328,5 +319,37 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     );
   }
 
-  return (await response.json()) as InvokeResult;
+  const data = await response.json();
+
+  // Normalize to InvokeResult shape
+  const firstChoice = data.choices?.[0] ?? {};
+  let messageContent = firstChoice.message?.content ?? "";
+  // Some OpenAI models return content as array of parts; join text parts
+  if (Array.isArray(messageContent)) {
+    const text = messageContent
+      .map((p: any) => (typeof p === "string" ? p : p.text || ""))
+      .filter(Boolean)
+      .join("\n");
+    messageContent = text;
+  }
+
+  const result: InvokeResult = {
+    id: data.id ?? "",
+    created: data.created ?? Math.floor(Date.now() / 1000),
+    model: data.model ?? "gpt-4o-mini",
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: "assistant",
+          content: messageContent,
+          tool_calls: firstChoice.message?.tool_calls,
+        },
+        finish_reason: firstChoice.finish_reason ?? null,
+      },
+    ],
+    usage: data.usage,
+  };
+
+  return result;
 }

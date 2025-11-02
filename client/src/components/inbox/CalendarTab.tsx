@@ -1,38 +1,72 @@
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, MapPin, Clock, User } from "lucide-react";
 import { useState, useMemo } from "react";
 
 export default function CalendarTab() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   
-  const { data: events, isLoading, isFetching } = trpc.inbox.calendar.list.useQuery({}, {
+  // Calculate date range: 7 days before to 30 days after selected date
+  const dateRange = useMemo(() => {
+    const start = new Date(selectedDate);
+    start.setDate(start.getDate() - 7);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(selectedDate);
+    end.setDate(end.getDate() + 30);
+    end.setHours(23, 59, 59, 999);
+    
+    return {
+      timeMin: start.toISOString(),
+      timeMax: end.toISOString(),
+    };
+  }, [selectedDate]);
+  
+  const { data: events, isLoading, isFetching } = trpc.inbox.calendar.list.useQuery(dateRange, {
     refetchInterval: 30000, // Auto-refresh every 30 seconds
     refetchIntervalInBackground: true,
   });
 
+  // Debug: Log events data
+  console.log('🔥 [HOT RELOAD ACTIVE] Events data:', events);
+  console.log('📅 [CalendarTab] Selected date:', selectedDate);
+  console.log('📅 [CalendarTab] Date range:', dateRange);
+
   // Filter events for selected date
   const dayEvents = useMemo(() => {
-    if (!events) return [];
+    if (!events) {
+      console.log('[CalendarTab] No events data');
+      return [];
+    }
+    
+    console.log('[CalendarTab] Filtering events:', events.length, 'total events');
     
     const startOfDay = new Date(selectedDate);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(selectedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    return events.filter((event: any) => {
-      const eventStart = new Date(event.start.dateTime || event.start.date);
+    const filtered = events.filter((event: any) => {
+      // Backend returns start/end as strings, not objects
+      const eventStart = new Date(event.start);
+      console.log('[CalendarTab] Event:', event.summary, 'Start:', eventStart, 'Day range:', startOfDay, '-', endOfDay);
       return eventStart >= startOfDay && eventStart <= endOfDay;
     });
+    
+    console.log('[CalendarTab] Filtered events for day:', filtered.length);
+    return filtered;
   }, [events, selectedDate]);
 
   // Generate hourly slots (7:00 - 20:00)
   const hours = Array.from({ length: 14 }, (_, i) => i + 7);
 
   const getEventPosition = (event: any) => {
-    const start = new Date(event.start.dateTime);
-    const end = new Date(event.end.dateTime);
+    // Backend returns start/end as strings, not objects
+    const start = new Date(event.start);
+    const end = new Date(event.end);
     const startHour = start.getHours() + start.getMinutes() / 60;
     const endHour = end.getHours() + end.getMinutes() / 60;
     
@@ -100,14 +134,15 @@ export default function CalendarTab() {
             return (
               <div
                 key={event.id}
-                className={`absolute left-2 right-2 ${eventColor} text-white rounded-md p-2 overflow-hidden border-l-4 border-primary`}
+                onClick={() => setSelectedEvent(event)}
+                className={`absolute left-2 right-2 ${eventColor} text-white rounded-md p-2 overflow-hidden border-l-4 border-primary cursor-pointer hover:opacity-90 transition-opacity`}
                 style={position}
               >
                 <div className="text-xs font-medium truncate">{event.summary}</div>
                 <div className="text-xs opacity-90">
-                  {new Date(event.start.dateTime).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(event.start).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
                   {' - '}
-                  {new Date(event.end.dateTime).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(event.end).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             );
@@ -138,6 +173,80 @@ export default function CalendarTab() {
           <p>No events scheduled for this day</p>
         </div>
       )}
+
+      {/* Event Detail Dialog */}
+      <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarIcon className="w-5 h-5" />
+              {selectedEvent?.summary || 'Event Details'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedEvent && new Date(selectedEvent.start).toLocaleDateString('da-DK', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedEvent && (
+            <div className="space-y-4 mt-4">
+              {/* Time */}
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <div className="font-medium">Tidspunkt</div>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(selectedEvent.start).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+                    {' - '}
+                    {new Date(selectedEvent.end).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Varighed: {Math.round((new Date(selectedEvent.end).getTime() - new Date(selectedEvent.start).getTime()) / (1000 * 60))} minutter
+                  </div>
+                </div>
+              </div>
+
+              {/* Location */}
+              {selectedEvent.location && (
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <div className="font-medium">Lokation</div>
+                    <div className="text-sm text-muted-foreground">{selectedEvent.location}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {selectedEvent.description && (
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1">
+                    <div className="font-medium">Beskrivelse</div>
+                    <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {selectedEvent.description}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button variant="outline" className="flex-1" onClick={() => setSelectedEvent(null)}>
+                  Luk
+                </Button>
+                <Button variant="default" className="flex-1">
+                  Rediger
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

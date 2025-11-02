@@ -77,6 +77,36 @@ export type EmailThread = typeof emailThreads.$inferSelect;
 export type InsertEmailThread = typeof emailThreads.$inferInsert;
 
 /**
+ * Email messages table - stores individual Gmail messages within threads
+ */
+export const emailMessages = mysqlTable("email_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  threadId: int("threadId").notNull(), // FK to emailThreads.id
+  gmailMessageId: varchar("gmailMessageId", { length: 255 }).notNull().unique(),
+  gmailThreadId: varchar("gmailThreadId", { length: 255 }).notNull(),
+  from: varchar("from", { length: 500 }).notNull(),
+  to: text("to").notNull(),
+  cc: text("cc"),
+  bcc: text("bcc"),
+  subject: text("subject"),
+  bodyText: text("bodyText"),
+  bodyHtml: text("bodyHtml"),
+  snippet: text("snippet"),
+  date: timestamp("date").notNull(),
+  labels: json("labels").$type<string[]>(),
+  hasAttachment: boolean("hasAttachment").default(false).notNull(),
+  isRead: boolean("isRead").default(false).notNull(),
+  isStarred: boolean("isStarred").default(false).notNull(),
+  internalDate: timestamp("internalDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmailMessage = typeof emailMessages.$inferSelect;
+export type InsertEmailMessage = typeof emailMessages.$inferInsert;
+
+/**
  * Invoices table - stores Billy invoice references
  */
 export const invoices = mysqlTable("invoices", {

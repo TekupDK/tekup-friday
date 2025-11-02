@@ -1,24 +1,29 @@
-version: '3.8'
-
 services:
-  # Friday AI Chat Application
   friday-ai:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: friday-ai
     ports:
       - "3000:3000"
     env_file:
       - .env
     environment:
-      - NODE_ENV=production
-    restart: unless-stopped
-    networks:
-      - friday-network
+      - NODE_ENV=development
+      - PORT=3000
+      - ALLOW_DEV_LOGIN=true
+      - VITE_APP_TITLE=Friday AI
+      - VITE_APP_LOGO=/logo.png
+      - VITE_APP_ID=friday-ai
     volumes:
-      # Development mode: mount source for hot reload
-      - ./server:/app/server
+      # Mount source code for live editing
       - ./client:/app/client
+      - ./server:/app/server
       - ./shared:/app/shared
-
-networks:
-  friday-network:
-    driver: bridge
+      - ./drizzle:/app/drizzle
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./vite.config.ts:/app/vite.config.ts
+      # Preserve container's node_modules
+      - /app/node_modules
+    restart: unless-stopped

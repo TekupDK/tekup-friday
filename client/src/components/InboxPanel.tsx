@@ -41,23 +41,25 @@ export default function InboxPanel({ activeTab, onTabChange }: InboxPanelProps) 
           </TabsList>
         </div>
 
-        <ScrollArea className="flex-1">
-          <TabsContent value="email" className="m-0 p-3 sm:p-4">
-            <EmailTab />
-          </TabsContent>
-          <TabsContent value="invoices" className="m-0 p-3 sm:p-4">
-            <InvoicesTab />
-          </TabsContent>
-          <TabsContent value="calendar" className="m-0 p-3 sm:p-4">
-            <CalendarTab />
-          </TabsContent>
-          <TabsContent value="leads" className="m-0 p-3 sm:p-4">
-            <LeadsTab />
-          </TabsContent>
-          <TabsContent value="tasks" className="m-0 p-3 sm:p-4">
-            <TasksTab />
-          </TabsContent>
-        </ScrollArea>
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <TabsContent value="email" className="m-0 p-3 sm:p-4 h-full">
+              <EmailTab />
+            </TabsContent>
+            <TabsContent value="invoices" className="m-0 p-3 sm:p-4 h-full">
+              <InvoicesTab />
+            </TabsContent>
+            <TabsContent value="calendar" className="m-0 p-3 sm:p-4 h-full">
+              <CalendarTab />
+            </TabsContent>
+            <TabsContent value="leads" className="m-0 p-3 sm:p-4 h-full">
+              <LeadsTab />
+            </TabsContent>
+            <TabsContent value="tasks" className="m-0 p-3 sm:p-4 h-full">
+              <TasksTab />
+            </TabsContent>
+          </ScrollArea>
+        </div>
       </Tabs>
     </div>
   );

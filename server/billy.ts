@@ -139,6 +139,37 @@ export async function getInvoices(): Promise<BillyInvoice[]> {
 }
 
 /**
+ * Get invoices with customer names enriched
+ */
+export async function getInvoicesWithCustomerNames(): Promise<Array<BillyInvoice & { customerName?: string }>> {
+  console.log('💰 [Billy] Fetching invoices with customer names...');
+  
+  // Fetch all invoices and contacts in parallel
+  const [invoices, contacts] = await Promise.all([
+    getInvoices(),
+    getCustomers(),
+  ]);
+  
+  console.log('💰 [Billy] Got', invoices.length, 'invoices and', contacts.length, 'contacts');
+  
+  // Create a map of contactId -> contact name for fast lookup
+  const contactMap = new Map<string, string>();
+  contacts.forEach(contact => {
+    contactMap.set(contact.id, contact.name);
+  });
+  
+  // Enrich invoices with customer names
+  const enrichedInvoices = invoices.map(invoice => ({
+    ...invoice,
+    customerName: contactMap.get(invoice.contactId) || undefined,
+  }));
+  
+  console.log('💰 [Billy] Enriched', enrichedInvoices.filter(i => i.customerName).length, 'invoices with customer names');
+  
+  return enrichedInvoices;
+}
+
+/**
  * Get a single invoice by ID
  */
 export async function getInvoice(invoiceId: string): Promise<BillyInvoice | null> {
