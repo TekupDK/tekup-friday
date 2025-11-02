@@ -17,6 +17,8 @@ import {
   updateLeadScore,
   createTask,
   updateTaskStatus,
+  updateTask,
+  deleteTask,
   trackEvent,
 } from "./db";
 import { routeAI, type PendingAction } from "./ai-router";
@@ -297,6 +299,14 @@ export const appRouter = router({
       }),
       updateStatus: protectedProcedure.input(z.object({ taskId: z.number(), status: z.enum(["todo", "in_progress", "done", "cancelled"]) })).mutation(async ({ input }) => {
         await updateTaskStatus(input.taskId, input.status);
+        return { success: true };
+      }),
+      update: protectedProcedure.input(z.object({ taskId: z.number(), title: z.string().optional(), description: z.string().optional(), dueDate: z.string().optional(), priority: z.enum(["low", "medium", "high", "urgent"]).optional(), status: z.enum(["todo", "in_progress", "done", "cancelled"]).optional() })).mutation(async ({ ctx, input }) => {
+        const { taskId, ...data } = input;
+        return updateTask(taskId, ctx.user.id, { ...data, dueDate: data.dueDate ? new Date(data.dueDate) : undefined });
+      }),
+      delete: protectedProcedure.input(z.object({ taskId: z.number() })).mutation(async ({ ctx, input }) => {
+        await deleteTask(input.taskId, ctx.user.id);
         return { success: true };
       }),
     }),
