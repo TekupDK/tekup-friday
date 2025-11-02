@@ -1,4 +1,13 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean } from "drizzle-orm/mysql-core";
+import {
+  int,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+  json,
+  boolean,
+} from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -48,7 +57,10 @@ export const messages = mysqlTable("messages", {
   role: mysqlEnum("role", ["user", "assistant", "system"]).notNull(),
   content: text("content").notNull(),
   model: varchar("model", { length: 64 }), // e.g., "gpt-4o", "claude-3.5", "gemini-2.0"
-  attachments: json("attachments").$type<Array<{ url: string; name: string; type: string }>>(),
+  attachments:
+    json("attachments").$type<
+      Array<{ url: string; name: string; type: string }>
+    >(),
   metadata: json("metadata").$type<Record<string, unknown>>(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -64,7 +76,8 @@ export const emailThreads = mysqlTable("email_threads", {
   userId: int("userId").notNull(),
   gmailThreadId: varchar("gmailThreadId", { length: 255 }).notNull(),
   subject: text("subject"),
-  participants: json("participants").$type<Array<{ name: string; email: string }>>(),
+  participants:
+    json("participants").$type<Array<{ name: string; email: string }>>(),
   snippet: text("snippet"),
   labels: json("labels").$type<string[]>(),
   lastMessageAt: timestamp("lastMessageAt"),
@@ -117,7 +130,9 @@ export const invoices = mysqlTable("invoices", {
   customerName: varchar("customerName", { length: 255 }),
   amount: int("amount").notNull(), // stored in cents/øre
   currency: varchar("currency", { length: 3 }).default("DKK").notNull(),
-  status: mysqlEnum("status", ["draft", "sent", "paid", "overdue", "cancelled"]).default("draft").notNull(),
+  status: mysqlEnum("status", ["draft", "sent", "paid", "overdue", "cancelled"])
+    .default("draft")
+    .notNull(),
   dueDate: timestamp("dueDate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -138,7 +153,9 @@ export const calendarEvents = mysqlTable("calendar_events", {
   startTime: timestamp("startTime").notNull(),
   endTime: timestamp("endTime").notNull(),
   location: text("location"),
-  status: mysqlEnum("status", ["confirmed", "tentative", "cancelled"]).default("confirmed").notNull(),
+  status: mysqlEnum("status", ["confirmed", "tentative", "cancelled"])
+    .default("confirmed")
+    .notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -158,7 +175,16 @@ export const leads = mysqlTable("leads", {
   phone: varchar("phone", { length: 32 }),
   company: varchar("company", { length: 255 }),
   score: int("score").default(0).notNull(), // AI-calculated lead score (0-100)
-  status: mysqlEnum("status", ["new", "contacted", "qualified", "proposal", "won", "lost"]).default("new").notNull(),
+  status: mysqlEnum("status", [
+    "new",
+    "contacted",
+    "qualified",
+    "proposal",
+    "won",
+    "lost",
+  ])
+    .default("new")
+    .notNull(),
   notes: text("notes"),
   metadata: json("metadata").$type<Record<string, unknown>>(), // flexible field for source-specific data
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -206,7 +232,16 @@ export const customerInvoices = mysqlTable("customer_invoices", {
   invoiceNo: varchar("invoiceNo", { length: 64 }),
   amount: int("amount").notNull(), // in øre
   paidAmount: int("paidAmount").default(0).notNull(), // in øre
-  status: mysqlEnum("status", ["draft", "approved", "sent", "paid", "overdue", "voided"]).default("draft").notNull(),
+  status: mysqlEnum("status", [
+    "draft",
+    "approved",
+    "sent",
+    "paid",
+    "overdue",
+    "voided",
+  ])
+    .default("draft")
+    .notNull(),
   entryDate: timestamp("entryDate"),
   dueDate: timestamp("dueDate"),
   paidDate: timestamp("paidDate"),
@@ -246,7 +281,8 @@ export const customerConversations = mysqlTable("customer_conversations", {
 });
 
 export type CustomerConversation = typeof customerConversations.$inferSelect;
-export type InsertCustomerConversation = typeof customerConversations.$inferInsert;
+export type InsertCustomerConversation =
+  typeof customerConversations.$inferInsert;
 
 /**
  * Tasks table - stores user tasks and reminders
@@ -257,8 +293,12 @@ export const tasks = mysqlTable("tasks", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   dueDate: timestamp("dueDate"),
-  status: mysqlEnum("status", ["todo", "in_progress", "done", "cancelled"]).default("todo").notNull(),
-  priority: mysqlEnum("priority", ["low", "medium", "high", "urgent"]).default("medium").notNull(),
+  status: mysqlEnum("status", ["todo", "in_progress", "done", "cancelled"])
+    .default("todo")
+    .notNull(),
+  priority: mysqlEnum("priority", ["low", "medium", "high", "urgent"])
+    .default("medium")
+    .notNull(),
   relatedTo: varchar("relatedTo", { length: 64 }), // e.g., "lead:123", "invoice:456"
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

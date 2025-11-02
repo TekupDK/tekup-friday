@@ -1,4 +1,4 @@
-import { drizzle } from 'drizzle-orm/mysql2';
+import { drizzle } from "drizzle-orm/mysql2";
 
 const db = drizzle(process.env.DATABASE_URL);
 
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS email_messages (
 )
 `;
 
-console.log('Creating email_messages table...');
+console.log("Creating email_messages table...");
 await db.execute(sql);
-console.log('✅ Table created successfully!');
+console.log("✅ Table created successfully!");
 process.exit(0);

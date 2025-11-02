@@ -5,6 +5,7 @@ This file contains rules and guidelines for Cursor AI to follow when assisting w
 ## Project Context
 
 Friday AI Chat is a business automation platform for TekupDK (Rendetalje.dk cleaning company) built with:
+
 - **Frontend:** React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui
 - **Backend:** Express 4 + tRPC 11 + Drizzle ORM
 - **Database:** MySQL/TiDB
@@ -22,6 +23,7 @@ Friday AI Chat is a business automation platform for TekupDK (Rendetalje.dk clea
 - **Use template literals** for string interpolation
 
 **Example:**
+
 ```typescript
 // Good
 const userName: string = `Hello, ${user.name}`;
@@ -44,6 +46,7 @@ let status: any = "pending";
 - **Props interface** - Always define props type
 
 **Example:**
+
 ```typescript
 // Good
 interface Props {
@@ -64,15 +67,15 @@ export default function MyComponent(props: any) {
 
 ### Naming Conventions
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Files | `kebab-case.tsx` or `PascalCase.tsx` | `user-profile.tsx`, `UserProfile.tsx` |
-| Components | `PascalCase` | `UserProfile` |
-| Functions | `camelCase` | `getUserById` |
-| Variables | `camelCase` | `userName` |
-| Constants | `UPPER_SNAKE_CASE` | `MAX_RETRIES` |
-| Types/Interfaces | `PascalCase` | `User`, `UserProfile` |
-| Database columns | `camelCase` | `createdAt`, `userId` |
+| Type             | Convention                           | Example                               |
+| ---------------- | ------------------------------------ | ------------------------------------- |
+| Files            | `kebab-case.tsx` or `PascalCase.tsx` | `user-profile.tsx`, `UserProfile.tsx` |
+| Components       | `PascalCase`                         | `UserProfile`                         |
+| Functions        | `camelCase`                          | `getUserById`                         |
+| Variables        | `camelCase`                          | `userName`                            |
+| Constants        | `UPPER_SNAKE_CASE`                   | `MAX_RETRIES`                         |
+| Types/Interfaces | `PascalCase`                         | `User`, `UserProfile`                 |
+| Database columns | `camelCase`                          | `createdAt`, `userId`                 |
 
 ### Import Order
 
@@ -113,6 +116,7 @@ import { APP_TITLE } from "@/const";
 ### File Organization
 
 **Backend:**
+
 - `server/routers.ts` - Main tRPC router (keep under 200 lines)
 - `server/db.ts` - Database helpers for core tables
 - `server/*-db.ts` - Feature-specific database helpers
@@ -120,6 +124,7 @@ import { APP_TITLE } from "@/const";
 - `server/*-actions.ts` - Business logic and actions
 
 **Frontend:**
+
 - `client/src/pages/*.tsx` - Top-level page components
 - `client/src/components/*.tsx` - Shared components
 - `client/src/components/inbox/*.tsx` - Inbox tab components
@@ -134,6 +139,7 @@ import { APP_TITLE } from "@/const";
 - **Use descriptive names** - `createdAt` not `created`
 
 **Example:**
+
 ```typescript
 // Good
 export const users = mysqlTable("users", {
@@ -193,6 +199,7 @@ procedureName: protectedProcedure
 - **Make optional fields explicit** with `.optional()`
 
 **Example:**
+
 ```typescript
 const createLeadInput = z.object({
   name: z.string().min(1).max(255),
@@ -209,17 +216,17 @@ import { TRPCError } from "@trpc/server";
 
 // Throw appropriate error codes
 throw new TRPCError({
-  code: "UNAUTHORIZED",  // 401
+  code: "UNAUTHORIZED", // 401
   message: "You must be logged in",
 });
 
 throw new TRPCError({
-  code: "NOT_FOUND",  // 404
+  code: "NOT_FOUND", // 404
   message: "Resource not found",
 });
 
 throw new TRPCError({
-  code: "BAD_REQUEST",  // 400
+  code: "BAD_REQUEST", // 400
   message: "Invalid input",
 });
 ```
@@ -238,7 +245,7 @@ const createMutation = trpc.leads.create.useMutation({
     trpc.useUtils().leads.list.invalidate();
     toast.success("Lead created");
   },
-  onError: (error) => {
+  onError: error => {
     toast.error(error.message);
   },
 });
@@ -250,18 +257,20 @@ await createMutation.mutateAsync({ name: "John" });
 
 ```typescript
 const updateMutation = trpc.leads.updateStatus.useMutation({
-  onMutate: async (newData) => {
+  onMutate: async newData => {
     await trpc.useUtils().leads.list.cancel();
     const previous = trpc.useUtils().leads.list.getData();
-    
-    trpc.useUtils().leads.list.setData(undefined, (old) =>
-      old?.map(lead =>
-        lead.id === newData.leadId
-          ? { ...lead, status: newData.status }
-          : lead
-      )
-    );
-    
+
+    trpc
+      .useUtils()
+      .leads.list.setData(undefined, old =>
+        old?.map(lead =>
+          lead.id === newData.leadId
+            ? { ...lead, status: newData.status }
+            : lead
+        )
+      );
+
     return { previous };
   },
   onError: (err, newData, context) => {
@@ -281,19 +290,19 @@ export default function MyComponent() {
   const { user } = useAuth();
   const { data, isLoading } = trpc.leads.list.useQuery();
   const createMutation = trpc.leads.create.useMutation();
-  
+
   // 2. State
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // 3. Handlers
   const handleCreate = async () => {
     await createMutation.mutateAsync({ ... });
   };
-  
+
   // 4. Early returns
   if (isLoading) return <div>Loading...</div>;
   if (!data) return <div>No data</div>;
-  
+
   // 5. Render
   return (
     <div>
@@ -338,6 +347,7 @@ export default function MyComponent() {
 - **Use CSS variables** for theme colors (defined in `index.css`)
 
 **Example:**
+
 ```tsx
 // Good
 <div className="bg-background text-foreground border-border">
@@ -383,7 +393,7 @@ export async function executeAction(intent: Intent, userId: number): Promise<Act
         message: "Action completed",
         data: result,
       };
-    
+
     default:
       return {
         success: false,
@@ -402,7 +412,7 @@ export async function executeAction(intent: Intent, userId: number): Promise<Act
 export async function getUserById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  
+
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
@@ -411,7 +421,7 @@ export async function getUserById(id: number) {
 export async function getUserLeads(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
   return await db.select().from(leads).where(eq(leads.userId, userId));
 }
 
@@ -419,7 +429,7 @@ export async function getUserLeads(userId: number) {
 export async function createLead(data: InsertLead) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const result = await db.insert(leads).values(data);
   return result;
 }
@@ -428,7 +438,7 @@ export async function createLead(data: InsertLead) {
 export async function updateLeadStatus(leadId: number, status: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   await db.update(leads).set({ status }).where(eq(leads.id, leadId));
 }
 ```
@@ -453,7 +463,7 @@ const mutation = trpc.operation.useMutation({
   onSuccess: () => {
     toast.success("Operation successful");
   },
-  onError: (error) => {
+  onError: error => {
     toast.error(error.message);
   },
 });
@@ -535,6 +545,7 @@ setUsers([...users, newUser]);
 When adding tests, follow these patterns:
 
 **Unit Tests (Vitest):**
+
 ```typescript
 import { describe, it, expect } from "vitest";
 
@@ -544,7 +555,7 @@ describe("getUserById", () => {
     expect(user).toBeDefined();
     expect(user?.id).toBe(1);
   });
-  
+
   it("returns undefined when not found", async () => {
     const user = await getUserById(999);
     expect(user).toBeUndefined();
@@ -553,6 +564,7 @@ describe("getUserById", () => {
 ```
 
 **Component Tests:**
+
 ```typescript
 import { render, screen } from "@testing-library/react";
 import { Button } from "@/components/ui/button";
@@ -574,11 +586,12 @@ describe("Button", () => {
 - **Update comments** when code changes
 
 **Example:**
+
 ```typescript
 /**
  * Calculates lead score based on engagement metrics.
  * Higher scores indicate more qualified leads.
- * 
+ *
  * @param lead - Lead object with email, phone, and interaction history
  * @returns Score between 0-100
  */
@@ -625,10 +638,11 @@ style: Format code with prettier
 - **Lazy load components** with `React.lazy()`
 
 **Example:**
+
 ```typescript
 import { useDebouncedCallback } from "use-debounce";
 
-const debouncedSearch = useDebouncedCallback((query) => {
+const debouncedSearch = useDebouncedCallback(query => {
   searchMutation.mutate({ query });
 }, 300); // 300ms delay
 ```

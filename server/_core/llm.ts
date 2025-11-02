@@ -19,7 +19,12 @@ export type FileContent = {
   type: "file_url";
   file_url: {
     url: string;
-    mime_type?: "audio/mpeg" | "audio/wav" | "application/pdf" | "audio/mp4" | "video/mp4" ;
+    mime_type?:
+      | "audio/mpeg"
+      | "audio/wav"
+      | "application/pdf"
+      | "audio/mp4"
+      | "video/mp4";
   };
 };
 
@@ -275,7 +280,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     if ((part as any).type === "image_url") return part;
     if ((part as any).type === "file_url") {
       // Minimal support: include the URL as text to avoid provider-specific handling
-      return { type: "text", text: `File: ${(part as FileContent).file_url.url}` };
+      return {
+        type: "text",
+        text: `File: ${(part as FileContent).file_url.url}`,
+      };
     }
     return { type: "text", text: JSON.stringify(part) };
   };
@@ -298,7 +306,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tools = tools;
   }
 
-  const normalizedToolChoice = normalizeToolChoice(toolChoice || tool_choice, tools);
+  const normalizedToolChoice = normalizeToolChoice(
+    toolChoice || tool_choice,
+    tools
+  );
   if (normalizedToolChoice) {
     payload.tool_choice = normalizedToolChoice;
   }

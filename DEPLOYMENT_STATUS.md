@@ -8,21 +8,25 @@
 All Manus dependencies have been successfully removed and replaced with direct integrations:
 
 ### Authentication
+
 - ❌ ~~Manus OAuth~~ → ✅ Local JWT sessions via `/login`
 - Session-based authentication with 1-year expiry
 - Auto-login enabled for development/testing
 
-### AI Integration  
+### AI Integration
+
 - ❌ ~~Manus Forge API~~ → ✅ OpenAI GPT-4o-mini (direct API)
 - API key configured and tested
 - Chat responses working perfectly
 
 ### Database
+
 - ❌ ~~Manus TiDB dependency~~ → ✅ Direct TiDB connection via mysql2
 - Connection string properly URL-encoded with SSL
 - All queries working
 
 ### Infrastructure
+
 - ❌ ~~Manus hosting~~ → ✅ Docker container (self-hosted)
 - Production-ready multi-stage build
 - Healthcheck enabled
@@ -37,7 +41,7 @@ All Manus dependencies have been successfully removed and replaced with direct i
 ✅ Chat conversation creation works  
 ✅ AI responses generate correctly (tested with "Hvad er 2+2?")  
 ✅ Business logic AI (invoice assistance) functioning  
-✅ Database connection stable  
+✅ Database connection stable
 
 ## 🔑 Active Configuration
 
@@ -101,14 +105,16 @@ The system is now fully operational and independent. Consider:
 ## 📝 Migration Summary
 
 **What was removed:**
+
 - Manus OAuth integration
 - Manus Forge API calls
 - All Manus-specific environment variables
 - External authentication dependencies
 
 **What was added:**
+
 - Direct OpenAI API integration
-- Local JWT session management  
+- Local JWT session management
 - Production Docker setup
 - Clear documentation and setup guides
 

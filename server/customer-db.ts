@@ -24,33 +24,54 @@ export async function getCustomerProfileByEmail(email: string, userId: number) {
   const result = await db
     .select()
     .from(customerProfiles)
-    .where(and(eq(customerProfiles.email, email), eq(customerProfiles.userId, userId)))
+    .where(
+      and(
+        eq(customerProfiles.email, email),
+        eq(customerProfiles.userId, userId)
+      )
+    )
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getCustomerProfileByLeadId(leadId: number, userId: number) {
+export async function getCustomerProfileByLeadId(
+  leadId: number,
+  userId: number
+) {
   const db = await getDb();
   if (!db) return undefined;
 
   const result = await db
     .select()
     .from(customerProfiles)
-    .where(and(eq(customerProfiles.leadId, leadId), eq(customerProfiles.userId, userId)))
+    .where(
+      and(
+        eq(customerProfiles.leadId, leadId),
+        eq(customerProfiles.userId, userId)
+      )
+    )
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getCustomerProfileById(customerId: number, userId: number) {
+export async function getCustomerProfileById(
+  customerId: number,
+  userId: number
+) {
   const db = await getDb();
   if (!db) return undefined;
 
   const result = await db
     .select()
     .from(customerProfiles)
-    .where(and(eq(customerProfiles.id, customerId), eq(customerProfiles.userId, userId)))
+    .where(
+      and(
+        eq(customerProfiles.id, customerId),
+        eq(customerProfiles.userId, userId)
+      )
+    )
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
@@ -184,7 +205,10 @@ export async function addCustomerEmail(data: InsertCustomerEmail) {
   }
 }
 
-export async function getCustomerConversation(customerId: number, userId: number) {
+export async function getCustomerConversation(
+  customerId: number,
+  userId: number
+) {
   const db = await getDb();
   if (!db) return undefined;
 
@@ -201,7 +225,9 @@ export async function getCustomerConversation(customerId: number, userId: number
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function createCustomerConversation(data: InsertCustomerConversation) {
+export async function createCustomerConversation(
+  data: InsertCustomerConversation
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 

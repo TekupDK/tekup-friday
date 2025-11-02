@@ -14,6 +14,7 @@ Friday is a Shortwave.ai-inspired chat interface built specifically for Rendetal
 ## ✨ Features
 
 ### 🤖 AI Chat Interface
+
 - **OpenAI GPT-4o-mini**: Fast, cost-effective AI responses
 - **Conversation Memory**: Full chat history context for better responses
 - **Voice Input**: Web Speech API integration (Danish language)
@@ -21,6 +22,7 @@ Friday is a Shortwave.ai-inspired chat interface built specifically for Rendetal
 - **File Attachments**: Support for PDF, CSV, JSON uploads
 
 ### 📧 Unified Inbox (Shortwave.ai-inspired)
+
 - **Email Tab**: Gmail integration with time-based grouping (TODAY, YESTERDAY, LAST 7 DAYS)
 - **Invoices Tab**: Billy.dk invoice management with AI analysis
 - **Calendar Tab**: Google Calendar with hourly grid view (7:00-20:00)
@@ -28,6 +30,7 @@ Friday is a Shortwave.ai-inspired chat interface built specifically for Rendetal
 - **Tasks Tab**: Priority-based task management
 
 ### 🔄 Intent-Based Actions
+
 Friday automatically detects and executes 7 types of actions:
 
 1. **Create Lead** - Extracts contact info from messages
@@ -39,7 +42,9 @@ Friday automatically detects and executes 7 types of actions:
 7. **Job Completion** - 6-step checklist automation (MEMORY_24)
 
 ### 🧠 25 MEMORY Business Rules
+
 Critical business logic embedded in AI system prompt:
+
 - **MEMORY_16**: Always request photos for flytterengøring before sending quotes
 - **MEMORY_17**: Invoice drafts only, never auto-approve (349 kr/hour)
 - **MEMORY_19**: NEVER add attendees to calendar events (prevents auto-invites)
@@ -48,12 +53,14 @@ Critical business logic embedded in AI system prompt:
 - [See full list in `server/ai-router.ts`]
 
 ### 📱 Mobile Responsive
+
 - **Desktop**: Split-panel layout (60% chat, 40% inbox)
 - **Mobile**: Single column with drawer navigation
 - **Touch-Friendly**: 44px minimum touch targets
 - **Responsive Breakpoints**: sm (640px), md (768px), lg (1024px)
 
 ### 🎨 Modern UI/UX
+
 - **Dark Theme**: Professional color palette
 - **Smooth Animations**: Fade-in, slide-in transitions
 - **Loading States**: Skeletons and spinners
@@ -63,6 +70,7 @@ Critical business logic embedded in AI system prompt:
 ## 🏗️ Tech Stack
 
 ### Frontend
+
 - **React 19** - Latest React features
 - **TypeScript** - Type safety
 - **Tailwind CSS 4** - Utility-first styling
@@ -71,12 +79,14 @@ Critical business logic embedded in AI system prompt:
 - **Streamdown** - Markdown rendering
 
 ### Backend
+
 - **Express 4** - Node.js server
 - **tRPC 11** - Type-safe procedures
 - **Drizzle ORM** - Database management
 - **MySQL/TiDB** - Relational database
 
 ### Integrations
+
 - **OpenAI API** - Direct GPT-4o-mini integration
 - **Google API** - Gmail + Calendar (domain-wide delegation)
 - **Billy.dk** - Invoice management API
@@ -84,6 +94,7 @@ Critical business logic embedded in AI system prompt:
 ## 📦 Installation
 
 ### Prerequisites
+
 - Docker & Docker Compose (recommended) OR Node.js 22.x + pnpm
 - MySQL/TiDB database (included in Docker Compose or use remote TiDB)
 - OpenAI API key ([get one here](https://platform.openai.com/account/api-keys))
@@ -93,12 +104,14 @@ Critical business logic embedded in AI system prompt:
 ### Quick Start with Docker (Recommended)
 
 1. **Clone repository**
+
 ```bash
 git clone https://github.com/TekupDK/tekup-friday.git
 cd tekup-friday
 ```
 
 2. **Configure environment**
+
 ```bash
 cp env.template.txt .env
 # Edit .env and set:
@@ -110,12 +123,14 @@ cp env.template.txt .env
 ```
 
 3. **Build and run**
+
 ```bash
 docker-compose build
 docker-compose up -d
 ```
 
 4. **Access the app**
+
 ```bash
 # App runs on http://localhost:3000
 # Visit http://localhost:3000/login to auto-login in dev mode
@@ -124,28 +139,33 @@ docker-compose up -d
 ### Local Development (without Docker)
 
 1. **Clone repository**
+
 ```bash
 git clone https://github.com/TekupDK/tekup-friday.git
 cd tekup-friday
 ```
 
 2. **Install dependencies**
+
 ```bash
 pnpm install
 ```
 
 3. **Configure environment**
+
 ```bash
 cp env.template.txt .env
 # Edit .env with your credentials (same as Docker setup above)
 ```
 
 4. **Push database schema**
+
 ```bash
 pnpm db:push
 ```
 
 5. **Start development server**
+
 ```bash
 pnpm dev
 ```
@@ -207,6 +227,7 @@ curl http://localhost:3000/
 ### Environment Variables for Production
 
 Required:
+
 - `DATABASE_URL` - MySQL/TiDB connection string with URL-encoded SSL
 - `OPENAI_API_KEY` - Valid OpenAI API key
 - `JWT_SECRET` - Strong random string for session signing
@@ -215,6 +236,7 @@ Required:
 - `ALLOW_DEV_LOGIN=true` - Enable /login endpoint in production
 
 Optional (for full features):
+
 - `GOOGLE_SERVICE_ACCOUNT_KEY` - JSON for Gmail/Calendar
 - `GOOGLE_IMPERSONATED_USER` - Email to impersonate
 - `GOOGLE_CALENDAR_ID` - Calendar to use
@@ -224,6 +246,7 @@ Optional (for full features):
 ## 🔧 Development
 
 ### Project Structure
+
 ```
 tekup-friday/
 ├── client/               # Frontend React app
@@ -244,6 +267,7 @@ tekup-friday/
 ```
 
 ### Key Commands
+
 ```bash
 pnpm dev          # Start dev server
 pnpm build        # Build for production
@@ -254,11 +278,13 @@ pnpm db:studio    # Open Drizzle Studio
 ## 🚀 Deployment
 
 ### Manus Platform (Recommended)
+
 1. Save checkpoint in Manus UI
 2. Click "Publish" button
 3. Auto-deployed with global CDN
 
 ### Manual Deployment
+
 ```bash
 pnpm build
 # Deploy dist/ folder to your hosting
@@ -267,24 +293,28 @@ pnpm build
 ## 📖 Usage Guide
 
 ### Creating a Lead
+
 ```
 User: "Ny lead fra Rengøring.nu: Hans Jensen, hans@email.dk, 12345678"
 Friday: [Creates lead in database] "Lead oprettet! Skal jeg sende en tilbudsmail?"
 ```
 
 ### Booking Calendar
+
 ```
 User: "Book møde med kunde i morgen kl 14"
 Friday: [Checks calendar, creates event] "Møde booket 14:00 i morgen ✓"
 ```
 
 ### Invoice Creation
+
 ```
 User: "Lav faktura til Hans Jensen for 3 timer rengøring"
 Friday: [Creates Billy draft at 349 kr/hour] "Faktura-udkast oprettet i Billy (1047 kr)"
 ```
 
 ### Flytterengøring Workflow
+
 ```
 User: "Kunde vil have tilbud på flytterengøring"
 Friday: "Jeg skal bruge billeder først (MEMORY_16). Kan du sende fotos af lejligheden?"
@@ -294,15 +324,17 @@ Friday: "Jeg skal bruge billeder først (MEMORY_16). Kan du sende fotos af lejli
 ## 🧪 Testing
 
 ### Tested Workflows (3/7)
+
 ✅ Lead creation with flytterengøring (MEMORY_16 working)  
 ✅ Task creation with Danish parsing  
-✅ Calendar booking (Intent sent successfully)  
+✅ Calendar booking (Intent sent successfully)
 
 ### Pending Tests
+
 ⏳ Invoice creation via Billy API  
 ⏳ Gmail search for duplicate leads  
 ⏳ Job completion 6-step checklist  
-⏳ Photo request blocking quote sending  
+⏳ Photo request blocking quote sending
 
 ## 📝 License
 

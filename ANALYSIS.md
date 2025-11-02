@@ -3,6 +3,7 @@
 ## 📊 Current Status
 
 ### ✅ What Works (Verified)
+
 1. **Chat Interface** - Split-panel layout with conversation history
 2. **Lead Creation** - Intent detection + database persistence + Gmail verification
 3. **Task Creation** - Intent detection + database persistence with priority/deadline
@@ -14,8 +15,10 @@
 ### ❌ What Needs Implementation
 
 #### 1. **Calendar Booking** (CRITICAL - PRIO 1)
+
 **Problem:** Intent not recognized for "Book X til Y" format
 **Required Behavior:**
+
 - ✅ Check calendar FIRST with `get_calendar_events`
 - ✅ NO attendees parameter (prevents Google invites)
 - ✅ Round hours only (3.0t not 3.25t)
@@ -25,13 +28,16 @@
 **Test Command:** "Book Lars Nielsen til rengøring på mandag kl 10-13"
 
 **Critical Rules from MEMORY_19:**
+
 ```
 ALDRIG attendees parameter - sender automatiske Google Calendar invites
 ```
 
 #### 2. **Billy Invoice Creation** (CRITICAL - PRIO 2)
+
 **Problem:** Not tested yet
 **Required Behavior:**
+
 - ✅ Search/create customer in Billy
 - ✅ Use product IDs: REN-001 (Fast), REN-002 (Hoved), REN-003 (Flytte), REN-004 (Erhverv), REN-005 (Special)
 - ✅ Set `unitPrice: 349` per line (NOT in products array)
@@ -42,15 +48,18 @@ ALDRIG attendees parameter - sender automatiske Google Calendar invites
 **Test Command:** "Opret faktura til Lars Nielsen for 6 arbejdstimer fast rengøring"
 
 **Critical Rules from MEMORY_17:**
+
 ```
 Billy products array er TOM - sæt altid unitPrice per invoice line
 Email ALDRIG direkte på contact - brug contactPersons array
 ```
 
 #### 3. **Email/Gmail Integration** (PRIO 3)
+
 **Problem:** MCP integration has errors
 **Current Error:** `Cannot read properties of undefined (reading 'filter')`
 **Required Behavior:**
+
 - ✅ Search emails with `search_email`
 - ✅ Read threads with `get_threads`
 - ✅ Draft emails with `draft_email`
@@ -59,7 +68,9 @@ Email ALDRIG direkte på contact - brug contactPersons array
 **Test Command:** "Søg efter emails fra lars@testfirma.dk"
 
 #### 4. **Flytterengøring Workflow** (MEMORY_16)
+
 **Required Behavior:**
+
 - ✅ ASK for photos FIRST ("køkken/bad/problemområder")
 - ✅ Ask budget
 - ✅ Ask focus areas
@@ -68,7 +79,9 @@ Email ALDRIG direkte på contact - brug contactPersons array
 **Test Command:** "Nyt lead: Marie ønsker flytterengøring, 85m², deadline i morgen"
 
 #### 5. **Afslutnings-Workflow** (MEMORY_24)
+
 **Required Behavior:**
+
 - ✅ Ask: "Er fakturaen oprettet i Billy? Hvis ja, hvad er invoice ID?"
 - ✅ Ask: "Hvilket team? (Jonas+Rawan / Jonas+FB)"
 - ✅ Ask: "Betaling? (MobilePay 71759 / Bank / Afventer)"
@@ -85,6 +98,7 @@ Email ALDRIG direkte på contact - brug contactPersons array
 ## 🎯 System Prompts Needed
 
 ### Main System Prompt
+
 ```
 You are Friday, an expert executive assistant for Danish small businesses (specifically Rendetalje cleaning company).
 
@@ -115,6 +129,7 @@ Language: Danish for customer communication, English for technical discussions
 ```
 
 ### Email Handling Workflow
+
 ```
 STEP 1: CHECK FOR EXISTING COMMUNICATION
 - Use search_email with customer's email
@@ -173,6 +188,7 @@ Rendetalje
 ```
 
 ### Calendar Management
+
 ```
 CRITICAL RULES:
 ❌ NEVER use 'attendees' parameter - causes unwanted Google invites!
@@ -203,6 +219,7 @@ create_calendar_event({
 ```
 
 ### Billy Invoice Management
+
 ```
 Standard Products:
 - REN-001: Fast Rengøring (recurring cleaning)
@@ -241,6 +258,7 @@ Workflow:
 ```
 
 ### Conflict Resolution
+
 ```
 Successful Pattern (Ken Gustavsen model):
 1. Acknowledge the specific issue immediately
@@ -278,16 +296,18 @@ Jonas
 ## 🔧 Technical Implementation Needed
 
 ### 1. Fix Intent Parser for Calendar Booking
+
 **File:** `/home/ubuntu/tekup-friday/server/intent-actions.ts`
 
 **Current Issue:** "Book Lars Nielsen til rengøring" doesn't match "book_meeting" intent
 
 **Fix Required:**
+
 ```typescript
 // Add more flexible pattern matching
-if ((lowerMessage.includes("book") || lowerMessage.includes("opret")) && 
-    (lowerMessage.includes("møde") || 
-     lowerMessage.includes("aftale") || 
+if ((lowerMessage.includes("book") || lowerMessage.includes("opret")) &&
+    (lowerMessage.includes("møde") ||
+     lowerMessage.includes("aftale") ||
      lowerMessage.includes("tid") ||
      lowerMessage.includes("til rengøring") ||
      lowerMessage.includes("til hovedrengøring") ||
@@ -302,22 +322,26 @@ if ((lowerMessage.includes("book") || lowerMessage.includes("opret")) &&
 ```
 
 ### 2. Fix MCP Gmail Integration
+
 **Current Error:** `Cannot read properties of undefined (reading 'filter')`
 **File:** `/home/ubuntu/tekup-friday/server/mcp.ts`
 
 **Issue:** MCP CLI result parsing fails
 
 ### 3. Add Friday System Prompts
+
 **File:** `/home/ubuntu/tekup-friday/server/friday-prompts.ts`
 
 **Update Required:** Add all workflow-specific prompts above
 
 ### 4. Implement Invoice Creation Intent
+
 **File:** `/home/ubuntu/tekup-friday/server/intent-actions.ts`
 
 **Already exists but needs testing**
 
 ### 5. Add Flytterengøring Photo Request Logic
+
 **File:** `/home/ubuntu/tekup-friday/server/intent-actions.ts`
 
 **New Intent Needed:** `request_photos_for_flytter`
@@ -327,6 +351,7 @@ if ((lowerMessage.includes("book") || lowerMessage.includes("opret")) &&
 ## 📋 Testing Checklist
 
 ### Phase 1: Calendar Booking (CRITICAL)
+
 - [ ] Fix intent parser to recognize "Book X til Y"
 - [ ] Test: "Book Lars Nielsen til rengøring på mandag kl 10-13"
 - [ ] Verify: NO attendees parameter
@@ -335,6 +360,7 @@ if ((lowerMessage.includes("book") || lowerMessage.includes("opret")) &&
 - [ ] Verify: Format "🏠 [TYPE] #X - [Name]"
 
 ### Phase 2: Billy Invoice
+
 - [ ] Test: "Opret faktura til Lars Nielsen for 6 arbejdstimer fast rengøring"
 - [ ] Verify: Searches/creates customer
 - [ ] Verify: Uses REN-001 product ID
@@ -343,12 +369,14 @@ if ((lowerMessage.includes("book") || lowerMessage.includes("opret")) &&
 - [ ] Verify: Shows for review (NOT auto-approve)
 
 ### Phase 3: Email Integration
+
 - [ ] Fix MCP Gmail errors
 - [ ] Test: "Søg efter emails fra lars@testfirma.dk"
 - [ ] Verify: Finds existing lead
 - [ ] Verify: Shows thread references
 
 ### Phase 4: Flytterengøring Workflow
+
 - [ ] Test: "Nyt lead: Marie ønsker flytterengøring, 85m²"
 - [ ] Verify: Asks for photos FIRST
 - [ ] Verify: Asks budget
@@ -356,6 +384,7 @@ if ((lowerMessage.includes("book") || lowerMessage.includes("opret")) &&
 - [ ] Verify: Does NOT send quote yet
 
 ### Phase 5: Afslutnings-Workflow
+
 - [ ] Test: "Lars' rengøring er færdig"
 - [ ] Verify: Asks Billy status
 - [ ] Verify: Asks team
@@ -378,16 +407,19 @@ if ((lowerMessage.includes("book") || lowerMessage.includes("opret")) &&
 ## 💡 Architecture Insights
 
 ### Why Current Approach Works
+
 1. **Intent-Based Actions** - No dependency on AI tool calling (which doesn't work with Gemini)
 2. **Direct API Calls** - Friday parses intent → executes database/MCP functions directly
 3. **Verification First** - Always check before acting (search emails, check calendar)
 
 ### Why Tool Calling Failed
+
 - Gemini 2.5 Flash via Manus Forge API doesn't support OpenAI-style tool calling
 - GPT-4o models not available via Forge API
 - Solution: Intent parsing + direct function execution
 
 ### Current Tech Stack
+
 - **Frontend:** React 19 + TypeScript + Tailwind 4 + tRPC 11
 - **Backend:** Express 4 + tRPC 11 + Drizzle ORM + MySQL
 - **AI:** Gemini 2.5 Flash (via Manus Forge API)
@@ -398,6 +430,7 @@ if ((lowerMessage.includes("book") || lowerMessage.includes("opret")) &&
 ## 📊 Success Metrics
 
 ### What Makes Friday "Complete"
+
 1. ✅ All 5 priority workflows tested and working
 2. ✅ No attendees bug in calendar
 3. ✅ No auto-approve in Billy invoices
@@ -406,6 +439,7 @@ if ((lowerMessage.includes("book") || lowerMessage.includes("opret")) &&
 6. ✅ Afslutnings-workflow completes without errors
 
 ### Production Readiness Criteria
+
 - [ ] All critical rules from 25 memories implemented
 - [ ] All intents recognized with 80%+ confidence
 - [ ] MCP integrations working without errors

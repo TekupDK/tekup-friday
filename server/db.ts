@@ -30,7 +30,7 @@ import {
   type InsertTask,
   type InsertAnalyticsEvent,
 } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -85,8 +85,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = user.role;
       updateSet.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
+      values.role = "admin";
+      updateSet.role = "admin";
     }
 
     if (!values.lastSignedIn) {
@@ -113,25 +113,37 @@ export async function getUserByOpenId(openId: string) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }
 
 // ============= Conversation Functions =============
 
-export async function createConversation(data: InsertConversation): Promise<Conversation> {
+export async function createConversation(
+  data: InsertConversation
+): Promise<Conversation> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const result = await db.insert(conversations).values(data);
   const id = Number(result[0].insertId);
 
-  const created = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
+  const created = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.id, id))
+    .limit(1);
   return created[0];
 }
 
-export async function getUserConversations(userId: number): Promise<Conversation[]> {
+export async function getUserConversations(
+  userId: number
+): Promise<Conversation[]> {
   const db = await getDb();
   if (!db) return [];
 
@@ -142,15 +154,24 @@ export async function getUserConversations(userId: number): Promise<Conversation
     .orderBy(desc(conversations.updatedAt));
 }
 
-export async function getConversation(id: number): Promise<Conversation | undefined> {
+export async function getConversation(
+  id: number
+): Promise<Conversation | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.id, id))
+    .limit(1);
   return result[0];
 }
 
-export async function updateConversationTitle(id: number, title: string): Promise<void> {
+export async function updateConversationTitle(
+  id: number,
+  title: string
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
@@ -166,11 +187,17 @@ export async function createMessage(data: InsertMessage): Promise<Message> {
   const result = await db.insert(messages).values(data);
   const id = Number(result[0].insertId);
 
-  const created = await db.select().from(messages).where(eq(messages.id, id)).limit(1);
+  const created = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.id, id))
+    .limit(1);
   return created[0];
 }
 
-export async function getConversationMessages(conversationId: number): Promise<Message[]> {
+export async function getConversationMessages(
+  conversationId: number
+): Promise<Message[]> {
   const db = await getDb();
   if (!db) return [];
 
@@ -183,18 +210,27 @@ export async function getConversationMessages(conversationId: number): Promise<M
 
 // ============= Email Thread Functions =============
 
-export async function createEmailThread(data: InsertEmailThread): Promise<EmailThread> {
+export async function createEmailThread(
+  data: InsertEmailThread
+): Promise<EmailThread> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const result = await db.insert(emailThreads).values(data);
   const id = Number(result[0].insertId);
 
-  const created = await db.select().from(emailThreads).where(eq(emailThreads.id, id)).limit(1);
+  const created = await db
+    .select()
+    .from(emailThreads)
+    .where(eq(emailThreads.id, id))
+    .limit(1);
   return created[0];
 }
 
-export async function getUserEmailThreads(userId: number, limit = 50): Promise<EmailThread[]> {
+export async function getUserEmailThreads(
+  userId: number,
+  limit = 50
+): Promise<EmailThread[]> {
   const db = await getDb();
   if (!db) return [];
 
@@ -206,7 +242,10 @@ export async function getUserEmailThreads(userId: number, limit = 50): Promise<E
     .limit(limit);
 }
 
-export async function markEmailThreadRead(id: number, isRead: boolean): Promise<void> {
+export async function markEmailThreadRead(
+  id: number,
+  isRead: boolean
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
@@ -222,7 +261,11 @@ export async function createInvoice(data: InsertInvoice): Promise<Invoice> {
   const result = await db.insert(invoices).values(data);
   const id = Number(result[0].insertId);
 
-  const created = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+  const created = await db
+    .select()
+    .from(invoices)
+    .where(eq(invoices.id, id))
+    .limit(1);
   return created[0];
 }
 
@@ -249,14 +292,20 @@ export async function updateInvoiceStatus(
 
 // ============= Calendar Event Functions =============
 
-export async function createCalendarEvent(data: InsertCalendarEvent): Promise<CalendarEvent> {
+export async function createCalendarEvent(
+  data: InsertCalendarEvent
+): Promise<CalendarEvent> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const result = await db.insert(calendarEvents).values(data);
   const id = Number(result[0].insertId);
 
-  const created = await db.select().from(calendarEvents).where(eq(calendarEvents.id, id)).limit(1);
+  const created = await db
+    .select()
+    .from(calendarEvents)
+    .where(eq(calendarEvents.id, id))
+    .limit(1);
   return created[0];
 }
 
@@ -270,7 +319,12 @@ export async function getUserCalendarEvents(
 
   const conditions = [eq(calendarEvents.userId, userId)];
   if (startTime && endTime) {
-    conditions.push(and(gte(calendarEvents.startTime, startTime), lte(calendarEvents.endTime, endTime))!);
+    conditions.push(
+      and(
+        gte(calendarEvents.startTime, startTime),
+        lte(calendarEvents.endTime, endTime)
+      )!
+    );
   }
 
   return db
@@ -289,7 +343,11 @@ export async function createLead(data: InsertLead): Promise<Lead> {
   const result = await db.insert(leads).values(data);
   const id = Number(result[0].insertId);
 
-  const created = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  const created = await db
+    .select()
+    .from(leads)
+    .where(eq(leads.id, id))
+    .limit(1);
   return created[0];
 }
 
@@ -297,7 +355,11 @@ export async function getUserLeads(userId: number): Promise<Lead[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(leads).where(eq(leads.userId, userId)).orderBy(desc(leads.createdAt));
+  return db
+    .select()
+    .from(leads)
+    .where(eq(leads.userId, userId))
+    .orderBy(desc(leads.createdAt));
 }
 
 export async function updateLeadStatus(
@@ -310,7 +372,10 @@ export async function updateLeadStatus(
   await db.update(leads).set({ status }).where(eq(leads.id, id));
 }
 
-export async function updateLeadScore(id: number, score: number): Promise<void> {
+export async function updateLeadScore(
+  id: number,
+  score: number
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
@@ -326,7 +391,11 @@ export async function createTask(data: InsertTask): Promise<Task> {
   const result = await db.insert(tasks).values(data);
   const id = Number(result[0].insertId);
 
-  const created = await db.select().from(tasks).where(eq(tasks.id, id)).limit(1);
+  const created = await db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.id, id))
+    .limit(1);
   return created[0];
 }
 
@@ -334,7 +403,11 @@ export async function getUserTasks(userId: number): Promise<Task[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(tasks).where(eq(tasks.userId, userId)).orderBy(desc(tasks.createdAt));
+  return db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.userId, userId))
+    .orderBy(desc(tasks.createdAt));
 }
 
 export async function updateTaskStatus(
@@ -361,7 +434,7 @@ export async function getAnalyticsEvents(
   eventType?: string,
   startDate?: Date,
   endDate?: Date
-): Promise<typeof analyticsEvents.$inferSelect[]> {
+): Promise<(typeof analyticsEvents.$inferSelect)[]> {
   const db = await getDb();
   if (!db) return [];
 
@@ -370,7 +443,12 @@ export async function getAnalyticsEvents(
     conditions.push(eq(analyticsEvents.eventType, eventType));
   }
   if (startDate && endDate) {
-    conditions.push(and(gte(analyticsEvents.createdAt, startDate), lte(analyticsEvents.createdAt, endDate))!);
+    conditions.push(
+      and(
+        gte(analyticsEvents.createdAt, startDate),
+        lte(analyticsEvents.createdAt, endDate)
+      )!
+    );
   }
 
   return db
@@ -385,7 +463,9 @@ export async function getAnalyticsEvents(
 /**
  * Save email messages to database
  */
-export async function saveEmailMessages(emails: InsertEmailMessage[]): Promise<void> {
+export async function saveEmailMessages(
+  emails: InsertEmailMessage[]
+): Promise<void> {
   const db = await getDb();
   if (!db || emails.length === 0) return;
 
@@ -409,7 +489,7 @@ export async function saveEmailMessages(emails: InsertEmailMessage[]): Promise<v
     }
     console.log(`[DB] Saved ${emails.length} email messages`);
   } catch (error) {
-    console.error('[DB] Error saving emails:', error);
+    console.error("[DB] Error saving emails:", error);
     throw error;
   }
 }

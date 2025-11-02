@@ -9,6 +9,7 @@
 ## ✅ Completed Features
 
 ### 1. Core Chat System
+
 - ✅ Split-panel UI (60% chat, 40% inbox)
 - ✅ Conversation management with history
 - ✅ Message persistence in database
@@ -17,6 +18,7 @@
 - ✅ Voice input integration (Web Speech API)
 
 ### 2. AI & Intent Detection
+
 - ✅ Gemini 2.5 Flash integration via Manus Forge API
 - ✅ Intent-based action system (replaces tool calling)
 - ✅ 7 intent types: create_lead, create_task, book_meeting, create_invoice, request_flytter_photos, job_completion, unknown
@@ -24,6 +26,7 @@
 - ✅ Parameter extraction from natural language
 
 ### 3. Database Schema (9 Tables)
+
 - ✅ users - Authentication and user management
 - ✅ conversations - Chat threads
 - ✅ messages - Chat history with role/content
@@ -35,6 +38,7 @@
 - ✅ analytics_events - Usage tracking
 
 ### 4. Lead Management
+
 - ✅ Create leads with name, email, phone, source
 - ✅ Lead scoring (0-100)
 - ✅ Status tracking (new, contacted, qualified, won, lost)
@@ -42,12 +46,14 @@
 - ✅ Leads tab in inbox with real-time display
 
 ### 5. Task Management
+
 - ✅ Create tasks with title, description, due date
 - ✅ Priority levels (low, medium, high)
 - ✅ Status tracking (todo, in_progress, done)
 - ✅ Tasks tab in inbox with status badges
 
 ### 6. Calendar Booking Workflow
+
 - ✅ Intent recognition for "Book X til rengøring"
 - ✅ Participant name extraction
 - ✅ Date/time parsing (Danish weekdays)
@@ -58,6 +64,7 @@
 - ✅ Asks for required info before booking
 
 ### 7. Billy Invoice Integration
+
 - ✅ Billy API client with authentication
 - ✅ Customer search by email
 - ✅ Invoice creation with line items
@@ -67,6 +74,7 @@
 - ✅ Review workflow before approval
 
 ### 8. Flytterengøring Workflow
+
 - ✅ Intent recognition for flytterengøring leads
 - ✅ **CRITICAL: Request photos FIRST** (MEMORY_16)
 - ✅ Higher lead score (60 vs 50)
@@ -74,6 +82,7 @@
 - ✅ Asks for budget, focus areas, deadline
 
 ### 9. Job Completion Workflow
+
 - ✅ Intent recognition for "[Name]'s rengøring er færdig"
 - ✅ 6-point checklist (MEMORY_24):
   1. Faktura oprettet?
@@ -84,12 +93,14 @@
   6. Fjern email labels
 
 ### 10. MCP Integration
+
 - ✅ Gmail MCP client (search, read, draft)
 - ✅ Google Calendar MCP client (list, create, check availability)
 - ✅ Error handling for OAuth requirements
 - ✅ Graceful fallback when authentication missing
 
 ### 11. System Prompts & Rules
+
 - ✅ Friday personality: Professional Danish executive assistant
 - ✅ Critical rules implemented:
   - MEMORY_2: Gmail duplicate check
@@ -104,16 +115,19 @@
 ## ⚠️ Known Issues
 
 ### 1. MCP OAuth Not Configured
+
 **Impact:** Gmail and Calendar functions return empty arrays  
 **Workaround:** Error handling prevents crashes, Friday asks for info manually  
 **Fix Required:** User must authenticate MCP servers via `manus-mcp-cli`
 
 ### 2. Input Field Visibility
+
 **Impact:** Message input sometimes hidden after sending  
 **Workaround:** Scroll or click conversation to reveal  
 **Fix Required:** Frontend layout adjustment
 
 ### 3. No Streaming Support
+
 **Impact:** AI responses appear all at once (not character-by-character)  
 **Workaround:** Loading indicator shows processing  
 **Fix Required:** Implement SSE or WebSocket streaming
@@ -123,8 +137,10 @@
 ## 🚀 Testing Results
 
 ### Test 1: Calendar Booking ✅
+
 **Command:** "Book Lars Nielsen til rengøring på mandag kl 10-13"  
-**Result:** 
+**Result:**
+
 - ✅ Intent detected (book_meeting, 0.8 confidence)
 - ✅ Participant extracted ("Lars Nielsen")
 - ✅ Calendar checked for availability
@@ -132,16 +148,20 @@
 - ✅ NO attendees parameter sent
 
 ### Test 2: Lead Creation ✅
+
 **Command:** "Opret lead: Lars Nielsen, lars@testfirma.dk, 20304050, website"  
 **Result:**
+
 - ✅ Intent detected (create_lead, 0.9 confidence)
 - ✅ Lead created in database
 - ✅ Visible in Leads tab
 - ✅ Score: 50, Status: new
 
 ### Test 3: Task Creation ✅
+
 **Command:** "Opret opgave: Send tilbud til Lars Nielsen, i morgen kl 14, høj prioritet"  
 **Result:**
+
 - ✅ Intent detected (create_task, 0.9 confidence)
 - ✅ Task created with parsed deadline
 - ✅ Priority set to "high"
@@ -152,18 +172,21 @@
 ## 📋 Next Steps for Production
 
 ### Critical (Must Fix Before Launch)
+
 1. **Configure MCP OAuth** - Enable Gmail/Calendar integration
 2. **Test Billy API** - Verify invoice creation with real Billy account
 3. **Fix Input Field** - Ensure always visible after messages
 4. **Add Streaming** - Implement real-time AI response streaming
 
 ### Important (Should Fix Soon)
+
 5. **Add Command Palette** - ⌘K for power users
 6. **Implement Search** - Search chat history
 7. **Add Typing Indicators** - Show when Friday is "thinking"
 8. **Email Notifications** - Notify owner of critical events
 
 ### Nice to Have (Future Enhancements)
+
 9. **Multi-language Support** - English + Danish
 10. **Voice Output** - Text-to-speech for Friday's responses
 11. **File Attachments** - Upload documents to chat
@@ -174,6 +197,7 @@
 ## 🛠️ Technical Stack
 
 **Frontend:**
+
 - React 19 + TypeScript
 - Tailwind CSS 4
 - tRPC 11 (type-safe API)
@@ -181,18 +205,21 @@
 - Lucide React (icons)
 
 **Backend:**
+
 - Express 4
 - tRPC 11
 - Drizzle ORM
 - MySQL/TiDB database
 
 **AI & Integrations:**
+
 - Gemini 2.5 Flash (via Manus Forge API)
 - Google MCP (Gmail + Calendar)
 - Billy.dk API
 - Web Speech API (voice input)
 
 **Infrastructure:**
+
 - Manus Platform (hosting + deployment)
 - S3 (file storage)
 - OAuth (authentication)
@@ -218,7 +245,7 @@
 ✅ **UI/UX:** Modern, responsive, professional  
 ✅ **Critical Rules:** All implemented  
 ⚠️ **MCP Integration:** 50% (needs OAuth)  
-⚠️ **Billy Integration:** 80% (needs real test)  
+⚠️ **Billy Integration:** 80% (needs real test)
 
 **Overall Completion:** ~85%
 
@@ -227,6 +254,7 @@
 ## 📝 Deployment Checklist
 
 Before publishing:
+
 - [ ] Configure MCP OAuth (Gmail + Calendar)
 - [ ] Test Billy API with real account
 - [ ] Fix input field visibility issue

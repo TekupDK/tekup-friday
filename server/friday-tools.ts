@@ -9,17 +9,20 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "search_gmail",
-      description: "Søg i Gmail efter emails baseret på søgekriterier. Brug dette til at finde leads, kunde emails, eller tidligere kommunikation.",
+      description:
+        "Søg i Gmail efter emails baseret på søgekriterier. Brug dette til at finde leads, kunde emails, eller tidligere kommunikation.",
       parameters: {
         type: "object",
         properties: {
           query: {
             type: "string",
-            description: "Gmail søgequery (f.eks. 'from:kunde@example.com' eller 'subject:rengøring' eller 'after:2025/10/01')",
+            description:
+              "Gmail søgequery (f.eks. 'from:kunde@example.com' eller 'subject:rengøring' eller 'after:2025/10/01')",
           },
           maxResults: {
             type: "number",
-            description: "Maksimalt antal resultater at returnere (standard: 20)",
+            description:
+              "Maksimalt antal resultater at returnere (standard: 20)",
           },
         },
         required: ["query"],
@@ -30,7 +33,8 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "get_gmail_thread",
-      description: "Hent fuld email tråd med alle beskeder. Brug dette til at læse email indhold før du svarer eller opretter faktura.",
+      description:
+        "Hent fuld email tråd med alle beskeder. Brug dette til at læse email indhold før du svarer eller opretter faktura.",
       parameters: {
         type: "object",
         properties: {
@@ -47,7 +51,8 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "create_gmail_draft",
-      description: "Opret et email udkast i Gmail. Brug dette til at forberede svar til kunder. ALDRIG send direkte - opret altid udkast først.",
+      description:
+        "Opret et email udkast i Gmail. Brug dette til at forberede svar til kunder. ALDRIG send direkte - opret altid udkast først.",
       parameters: {
         type: "object",
         properties: {
@@ -78,7 +83,8 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "list_billy_invoices",
-      description: "Hent liste over fakturaer fra Billy. Brug dette til at se eksisterende fakturaer.",
+      description:
+        "Hent liste over fakturaer fra Billy. Brug dette til at se eksisterende fakturaer.",
       parameters: {
         type: "object",
         properties: {},
@@ -89,7 +95,8 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "search_billy_customer",
-      description: "Søg efter kunde i Billy baseret på email adresse. Brug dette før du opretter ny faktura for at finde customer ID.",
+      description:
+        "Søg efter kunde i Billy baseret på email adresse. Brug dette før du opretter ny faktura for at finde customer ID.",
       parameters: {
         type: "object",
         properties: {
@@ -106,13 +113,15 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "create_billy_invoice",
-      description: "Opret ny faktura i Billy. VIGTIGT: Tjek altid om kunde eksisterer først med search_billy_customer. Brug product IDs: REN-001 (Fast), REN-002 (Hoved), REN-003 (Flytte), REN-004 (Erhverv), REN-005 (Special). Pris: 349 kr/time/person.",
+      description:
+        "Opret ny faktura i Billy. VIGTIGT: Tjek altid om kunde eksisterer først med search_billy_customer. Brug product IDs: REN-001 (Fast), REN-002 (Hoved), REN-003 (Flytte), REN-004 (Erhverv), REN-005 (Special). Pris: 349 kr/time/person.",
       parameters: {
         type: "object",
         properties: {
           contactId: {
             type: "string",
-            description: "Billy customer/contact ID (find med search_billy_customer)",
+            description:
+              "Billy customer/contact ID (find med search_billy_customer)",
           },
           entryDate: {
             type: "string",
@@ -120,7 +129,8 @@ export const FRIDAY_TOOLS = [
           },
           paymentTermsDays: {
             type: "number",
-            description: "Betalingsfrist i dage (1 for engangsopgaver, 30 for faste kunder)",
+            description:
+              "Betalingsfrist i dage (1 for engangsopgaver, 30 for faste kunder)",
           },
           lines: {
             type: "array",
@@ -159,13 +169,15 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "list_calendar_events",
-      description: "Hent kalender events. Brug dette til at tjekke ledige tider før du foreslår booking.",
+      description:
+        "Hent kalender events. Brug dette til at tjekke ledige tider før du foreslår booking.",
       parameters: {
         type: "object",
         properties: {
           timeMin: {
             type: "string",
-            description: "Start tidspunkt (ISO 8601 format, f.eks. '2025-11-01T00:00:00+01:00')",
+            description:
+              "Start tidspunkt (ISO 8601 format, f.eks. '2025-11-01T00:00:00+01:00')",
           },
           timeMax: {
             type: "string",
@@ -183,7 +195,8 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "find_free_calendar_slots",
-      description: "Find ledige tider i kalenderen. Brug dette til at foreslå konkrete tider til kunder.",
+      description:
+        "Find ledige tider i kalenderen. Brug dette til at foreslå konkrete tider til kunder.",
       parameters: {
         type: "object",
         properties: {
@@ -193,7 +206,8 @@ export const FRIDAY_TOOLS = [
           },
           duration: {
             type: "number",
-            description: "Varighed i timer (brug RUNDE timer: 1, 1.5, 2, 2.5, 3 osv.)",
+            description:
+              "Varighed i timer (brug RUNDE timer: 1, 1.5, 2, 2.5, 3 osv.)",
           },
           workingHours: {
             type: "object",
@@ -218,25 +232,30 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "create_calendar_event",
-      description: "Opret kalender event. KRITISK: ALDRIG brug 'attendees' parameter - det sender Google invitationer! Format: '🏠 [TYPE] #[NR] - [Kunde]'. Brug RUNDE timer (1t, 1.5t, 2t).",
+      description:
+        "Opret kalender event. KRITISK: ALDRIG brug 'attendees' parameter - det sender Google invitationer! Format: '🏠 [TYPE] #[NR] - [Kunde]'. Brug RUNDE timer (1t, 1.5t, 2t).",
       parameters: {
         type: "object",
         properties: {
           summary: {
             type: "string",
-            description: "Event titel (format: '🏠 Fast Rengøring #3 - Mette Nielsen')",
+            description:
+              "Event titel (format: '🏠 Fast Rengøring #3 - Mette Nielsen')",
           },
           description: {
             type: "string",
-            description: "Event beskrivelse med adresse, telefon, email, aftale detaljer, team, estimat, pris, thread reference",
+            description:
+              "Event beskrivelse med adresse, telefon, email, aftale detaljer, team, estimat, pris, thread reference",
           },
           start: {
             type: "string",
-            description: "Start tidspunkt (ISO 8601 format med timezone: '2025-11-05T10:00:00+01:00')",
+            description:
+              "Start tidspunkt (ISO 8601 format med timezone: '2025-11-05T10:00:00+01:00')",
           },
           end: {
             type: "string",
-            description: "Slut tidspunkt (ISO 8601 format med timezone: '2025-11-05T13:00:00+01:00')",
+            description:
+              "Slut tidspunkt (ISO 8601 format med timezone: '2025-11-05T13:00:00+01:00')",
           },
           location: {
             type: "string",
@@ -253,7 +272,8 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "list_leads",
-      description: "Hent liste over leads. Brug dette til at se nye leads eller søge efter specifikke leads.",
+      description:
+        "Hent liste over leads. Brug dette til at se nye leads eller søge efter specifikke leads.",
       parameters: {
         type: "object",
         properties: {
@@ -263,7 +283,8 @@ export const FRIDAY_TOOLS = [
           },
           source: {
             type: "string",
-            description: "Filter på kilde (rengoring_nu, rengoring_aarhus, adhelp, website, referral)",
+            description:
+              "Filter på kilde (rengoring_nu, rengoring_aarhus, adhelp, website, referral)",
           },
         },
       },
@@ -273,13 +294,15 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "create_lead",
-      description: "Opret nyt lead fra email eller anden kilde. Brug dette når du finder et nyt lead i Gmail.",
+      description:
+        "Opret nyt lead fra email eller anden kilde. Brug dette når du finder et nyt lead i Gmail.",
       parameters: {
         type: "object",
         properties: {
           source: {
             type: "string",
-            description: "Lead kilde (rengoring_nu, rengoring_aarhus, adhelp, website, referral)",
+            description:
+              "Lead kilde (rengoring_nu, rengoring_aarhus, adhelp, website, referral)",
           },
           name: {
             type: "string",
@@ -299,7 +322,8 @@ export const FRIDAY_TOOLS = [
           },
           score: {
             type: "number",
-            description: "Lead score 0-100 (baseret på urgency, business email, phone, osv.)",
+            description:
+              "Lead score 0-100 (baseret på urgency, business email, phone, osv.)",
           },
         },
         required: ["source", "name"],
@@ -310,7 +334,8 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "update_lead_status",
-      description: "Opdater lead status. Brug dette når lead flytter gennem pipeline.",
+      description:
+        "Opdater lead status. Brug dette når lead flytter gennem pipeline.",
       parameters: {
         type: "object",
         properties: {
@@ -333,7 +358,8 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "list_tasks",
-      description: "Hent liste over opgaver. Brug dette til at se hvad der skal gøres.",
+      description:
+        "Hent liste over opgaver. Brug dette til at se hvad der skal gøres.",
       parameters: {
         type: "object",
         properties: {
@@ -349,7 +375,8 @@ export const FRIDAY_TOOLS = [
     type: "function" as const,
     function: {
       name: "create_task",
-      description: "Opret ny opgave. Brug dette til at huske opfølgning eller andre opgaver.",
+      description:
+        "Opret ny opgave. Brug dette til at huske opfølgning eller andre opgaver.",
       parameters: {
         type: "object",
         properties: {
