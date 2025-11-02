@@ -6,54 +6,18 @@ services:
     build: .
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=mysql://friday_user:friday_password@db:3306/friday_ai
-      - JWT_SECRET=your-jwt-secret-change-this
-    depends_on:
-      - db
-      - redis
     restart: unless-stopped
     networks:
       - friday-network
-
-  # MySQL Database
-  db:
-    image: mysql:8.0
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: friday_ai
-      MYSQL_USER: friday_user
-      MYSQL_PASSWORD: friday_password
-    ports:
-      - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    networks:
-      - friday-network
-
-  # Redis Cache (optional)
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    networks:
-      - friday-network
-
-  # Database Admin (optional)
-  adminer:
-    image: adminer
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    networks:
-      - friday-network
-
-volumes:
-  mysql_data:
+      # Development mode: mount source for hot reload
+      - ./server:/app/server
+      - ./client:/app/client
+      - ./shared:/app/shared
 
 networks:
   friday-network:
