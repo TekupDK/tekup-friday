@@ -115,7 +115,10 @@ export default function ChatInterface() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem
+                disabled
+                className="cursor-not-allowed opacity-50"
+              >
                 <User className="mr-2 h-4 w-4" />
                 <span>My Profile</span>
               </DropdownMenuItem>
@@ -145,7 +148,10 @@ export default function ChatInterface() {
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem
+                disabled
+                className="cursor-not-allowed opacity-50"
+              >
                 <User className="mr-2 h-4 w-4" />
                 <span>My Profile</span>
               </DropdownMenuItem>
