@@ -13,11 +13,7 @@ import {
   createCalendarEvent,
   findFreeTimeSlots,
 } from "./mcp";
-import {
-  getInvoices,
-  createInvoice,
-  searchCustomerByEmail,
-} from "./billy";
+import { getInvoices, createInvoice, searchCustomerByEmail } from "./billy";
 import {
   getUserLeads,
   createLead,
@@ -38,19 +34,29 @@ export interface ToolCallResult {
 export async function executeToolCall(
   toolName: ToolName,
   args: Record<string, any>,
-  userId: number,
+  userId: number
 ): Promise<ToolCallResult> {
   try {
     switch (toolName) {
       // Gmail Tools
       case "search_gmail":
-        return await handleSearchGmail(args as { query: string; maxResults?: number });
+        return await handleSearchGmail(
+          args as { query: string; maxResults?: number }
+        );
 
       case "get_gmail_thread":
         return await handleGetGmailThread(args as { threadId: string });
 
       case "create_gmail_draft":
-        return await handleCreateGmailDraft(args as { to: string; subject: string; body: string; cc?: string; bcc?: string });
+        return await handleCreateGmailDraft(
+          args as {
+            to: string;
+            subject: string;
+            body: string;
+            cc?: string;
+            bcc?: string;
+          }
+        );
 
       // Billy Tools
       case "list_billy_invoices":
@@ -60,34 +66,80 @@ export async function executeToolCall(
         return await handleSearchBillyCustomer(args as { email: string });
 
       case "create_billy_invoice":
-        return await handleCreateBillyInvoice(args as { contactId: string; entryDate: string; paymentTermsDays?: number; lines: Array<{ description: string; quantity: number; unitPrice: number; productId?: string }> });
+        return await handleCreateBillyInvoice(
+          args as {
+            contactId: string;
+            entryDate: string;
+            paymentTermsDays?: number;
+            lines: Array<{
+              description: string;
+              quantity: number;
+              unitPrice: number;
+              productId?: string;
+            }>;
+          }
+        );
 
       // Calendar Tools
       case "list_calendar_events":
         return await handleListCalendarEvents(args);
 
       case "find_free_calendar_slots":
-        return await handleFindFreeCalendarSlots(args as { date: string; duration: number; workingHours?: { start: number; end: number } });
+        return await handleFindFreeCalendarSlots(
+          args as {
+            date: string;
+            duration: number;
+            workingHours?: { start: number; end: number };
+          }
+        );
 
       case "create_calendar_event":
-        return await handleCreateCalendarEvent(args as { summary: string; description?: string; start: string; end: string; location?: string });
+        return await handleCreateCalendarEvent(
+          args as {
+            summary: string;
+            description?: string;
+            start: string;
+            end: string;
+            location?: string;
+          }
+        );
 
       // Lead Tools
       case "list_leads":
         return await handleListLeads(userId, args);
 
       case "create_lead":
-        return await handleCreateLead(userId, args as { source: string; name: string; email?: string; phone?: string; notes?: string; score?: number });
+        return await handleCreateLead(
+          userId,
+          args as {
+            source: string;
+            name: string;
+            email?: string;
+            phone?: string;
+            notes?: string;
+            score?: number;
+          }
+        );
 
       case "update_lead_status":
-        return await handleUpdateLeadStatus(args as { leadId: number; status: string });
+        return await handleUpdateLeadStatus(
+          args as { leadId: number; status: string }
+        );
 
       // Task Tools
       case "list_tasks":
         return await handleListTasks(userId, args);
 
       case "create_task":
-        return await handleCreateTask(userId, args as { title: string; description?: string; dueDate?: string; priority?: string });
+        return await handleCreateTask(
+          userId,
+          args as {
+            title: string;
+            description?: string;
+            dueDate?: string;
+            priority?: string;
+          }
+        );
 
       default:
         return {
@@ -105,7 +157,10 @@ export async function executeToolCall(
 }
 
 // Gmail Tool Handlers
-async function handleSearchGmail(args: { query: string; maxResults?: number }): Promise<ToolCallResult> {
+async function handleSearchGmail(args: {
+  query: string;
+  maxResults?: number;
+}): Promise<ToolCallResult> {
   const results = await searchGmail(args.query, args.maxResults);
   return {
     success: true,
@@ -113,7 +168,9 @@ async function handleSearchGmail(args: { query: string; maxResults?: number }): 
   };
 }
 
-async function handleGetGmailThread(args: { threadId: string }): Promise<ToolCallResult> {
+async function handleGetGmailThread(args: {
+  threadId: string;
+}): Promise<ToolCallResult> {
   const thread = await getGmailThread(args.threadId);
   return {
     success: true,
@@ -144,7 +201,9 @@ async function handleListBillyInvoices(): Promise<ToolCallResult> {
   };
 }
 
-async function handleSearchBillyCustomer(args: { email: string }): Promise<ToolCallResult> {
+async function handleSearchBillyCustomer(args: {
+  email: string;
+}): Promise<ToolCallResult> {
   const customer = await searchCustomerByEmail(args.email);
   return {
     success: true,
@@ -210,16 +269,19 @@ async function handleCreateCalendarEvent(args: {
 }
 
 // Lead Tool Handlers
-async function handleListLeads(userId: number, args: { status?: string; source?: string }): Promise<ToolCallResult> {
+async function handleListLeads(
+  userId: number,
+  args: { status?: string; source?: string }
+): Promise<ToolCallResult> {
   const leads = await getUserLeads(userId);
-  
+
   // Filter by status if provided
   let filteredLeads = leads;
   if (args.status) {
-    filteredLeads = filteredLeads.filter((lead) => lead.status === args.status);
+    filteredLeads = filteredLeads.filter(lead => lead.status === args.status);
   }
   if (args.source) {
-    filteredLeads = filteredLeads.filter((lead) => lead.source === args.source);
+    filteredLeads = filteredLeads.filter(lead => lead.source === args.source);
   }
 
   return {
@@ -237,7 +299,7 @@ async function handleCreateLead(
     phone?: string;
     notes?: string;
     score?: number;
-  },
+  }
 ): Promise<ToolCallResult> {
   const lead = await createLead({
     userId,
@@ -256,8 +318,20 @@ async function handleCreateLead(
   };
 }
 
-async function handleUpdateLeadStatus(args: { leadId: number; status: string }): Promise<ToolCallResult> {
-  await updateLeadStatus(args.leadId, args.status as "new" | "contacted" | "qualified" | "proposal" | "won" | "lost");
+async function handleUpdateLeadStatus(args: {
+  leadId: number;
+  status: string;
+}): Promise<ToolCallResult> {
+  await updateLeadStatus(
+    args.leadId,
+    args.status as
+      | "new"
+      | "contacted"
+      | "qualified"
+      | "proposal"
+      | "won"
+      | "lost"
+  );
   return {
     success: true,
     data: { leadId: args.leadId, status: args.status },
@@ -265,13 +339,16 @@ async function handleUpdateLeadStatus(args: { leadId: number; status: string }):
 }
 
 // Task Tool Handlers
-async function handleListTasks(userId: number, args: { status?: string }): Promise<ToolCallResult> {
+async function handleListTasks(
+  userId: number,
+  args: { status?: string }
+): Promise<ToolCallResult> {
   const tasks = await getUserTasks(userId);
 
   // Filter by status if provided
   let filteredTasks = tasks;
   if (args.status) {
-    filteredTasks = filteredTasks.filter((task) => task.status === args.status);
+    filteredTasks = filteredTasks.filter(task => task.status === args.status);
   }
 
   return {
@@ -287,7 +364,7 @@ async function handleCreateTask(
     description?: string;
     dueDate?: string;
     priority?: string;
-  },
+  }
 ): Promise<ToolCallResult> {
   const task = await createTask({
     userId,
@@ -295,7 +372,11 @@ async function handleCreateTask(
     description: args.description || null,
     dueDate: args.dueDate ? new Date(args.dueDate) : null,
     status: "todo",
-    priority: (args.priority || "medium") as "low" | "medium" | "high" | "urgent",
+    priority: (args.priority || "medium") as
+      | "low"
+      | "medium"
+      | "high"
+      | "urgent",
   });
 
   return {

@@ -1,21 +1,23 @@
 /**
  * Billy.dk API Integration via Billy-mcp By Tekup
- * 
+ *
  * Repository: TekupDK/tekup-billy (apps/production/tekup-billy)
  * Server: Billy-mcp By Tekup v2.0.0
  * Base URL: https://tekup-billy-production.up.railway.app
  * Documentation: docs/integration/CHATGPT_INTEGRATION_GUIDE.md
- * 
+ *
  * Features:
  * - Automatic pagination for all list operations
  * - Enhanced type safety and error handling
  * - Invoice, customer, and product management
- * 
+ *
  * API Documentation: https://www.billy.dk/api
  */
 
-const BILLY_API_KEY = process.env.BILLY_API_KEY || "43e7439bccb58a8a96dd57dd06dae10add009111";
-const BILLY_ORGANIZATION_ID = process.env.BILLY_ORGANIZATION_ID || "pmf9tU56RoyZdcX3k69z1g";
+const BILLY_API_KEY =
+  process.env.BILLY_API_KEY || "43e7439bccb58a8a96dd57dd06dae10add009111";
+const BILLY_ORGANIZATION_ID =
+  process.env.BILLY_ORGANIZATION_ID || "pmf9tU56RoyZdcX3k69z1g";
 const BILLY_API_BASE = "https://api.billysbilling.com/v2";
 
 interface BillyContact {
@@ -61,7 +63,7 @@ async function billyRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${BILLY_API_BASE}${endpoint}`;
-  
+
   const headers = {
     "X-Access-Token": BILLY_API_KEY,
     "Content-Type": "application/json",
@@ -94,7 +96,9 @@ export async function getCustomers(): Promise<BillyContact[]> {
 /**
  * Get a single customer by ID
  */
-export async function getCustomer(contactId: string): Promise<BillyContact | null> {
+export async function getCustomer(
+  contactId: string
+): Promise<BillyContact | null> {
   try {
     const data = await billyRequest<{ contact: BillyContact }>(
       `/contacts/${contactId}`
@@ -141,38 +145,52 @@ export async function getInvoices(): Promise<BillyInvoice[]> {
 /**
  * Get invoices with customer names enriched
  */
-export async function getInvoicesWithCustomerNames(): Promise<Array<BillyInvoice & { customerName?: string }>> {
-  console.log('💰 [Billy] Fetching invoices with customer names...');
-  
+export async function getInvoicesWithCustomerNames(): Promise<
+  Array<BillyInvoice & { customerName?: string }>
+> {
+  console.log("💰 [Billy] Fetching invoices with customer names...");
+
   // Fetch all invoices and contacts in parallel
   const [invoices, contacts] = await Promise.all([
     getInvoices(),
     getCustomers(),
   ]);
-  
-  console.log('💰 [Billy] Got', invoices.length, 'invoices and', contacts.length, 'contacts');
-  
+
+  console.log(
+    "💰 [Billy] Got",
+    invoices.length,
+    "invoices and",
+    contacts.length,
+    "contacts"
+  );
+
   // Create a map of contactId -> contact name for fast lookup
   const contactMap = new Map<string, string>();
   contacts.forEach(contact => {
     contactMap.set(contact.id, contact.name);
   });
-  
+
   // Enrich invoices with customer names
   const enrichedInvoices = invoices.map(invoice => ({
     ...invoice,
     customerName: contactMap.get(invoice.contactId) || undefined,
   }));
-  
-  console.log('💰 [Billy] Enriched', enrichedInvoices.filter(i => i.customerName).length, 'invoices with customer names');
-  
+
+  console.log(
+    "💰 [Billy] Enriched",
+    enrichedInvoices.filter(i => i.customerName).length,
+    "invoices with customer names"
+  );
+
   return enrichedInvoices;
 }
 
 /**
  * Get a single invoice by ID
  */
-export async function getInvoice(invoiceId: string): Promise<BillyInvoice | null> {
+export async function getInvoice(
+  invoiceId: string
+): Promise<BillyInvoice | null> {
   try {
     const data = await billyRequest<{ invoice: BillyInvoice }>(
       `/invoices/${invoiceId}`
@@ -246,7 +264,11 @@ export async function getProducts(): Promise<BillyProduct[]> {
 /**
  * Search customers by email
  */
-export async function searchCustomerByEmail(email: string): Promise<BillyContact | null> {
+export async function searchCustomerByEmail(
+  email: string
+): Promise<BillyContact | null> {
   const customers = await getCustomers();
-  return customers.find((c) => c.email?.toLowerCase() === email.toLowerCase()) || null;
+  return (
+    customers.find(c => c.email?.toLowerCase() === email.toLowerCase()) || null
+  );
 }

@@ -9,6 +9,7 @@
 ## Powered by Manus
 
 **Technology Stack:**
+
 - **Frontend:** React 19 + TypeScript + Tailwind CSS 4 for modern, responsive interface
 - **Backend:** Express 4 + tRPC 11 + Drizzle ORM for type-safe API communication
 - **Database:** MySQL/TiDB with 9 tables (conversations, messages, leads, tasks, invoices, calendar, emails, customers, analytics)
@@ -35,6 +36,7 @@ Click "New Chat" → Select your preferred AI model from dropdown (Gemini 2.5 Fl
 Type: "Nyt lead: Marie Hansen ønsker flytterengøring, 85m², Aarhus C"
 
 Friday will:
+
 1. Create lead in database
 2. Detect "flytterengøring" keyword
 3. Request photos BEFORE sending quote (MEMORY_16: Critical rule)
@@ -47,6 +49,7 @@ Friday will:
 Type: "Opret opgave: Ring til Lars Nielsen, høj prioritet, deadline i morgen kl 14"
 
 Friday parses Danish naturally:
+
 - "høj prioritet" → High priority badge
 - "i morgen kl 14" → Tomorrow at 14:00 deadline
 - Task appears in "Tasks" tab with status "todo"
@@ -56,6 +59,7 @@ Friday parses Danish naturally:
 Type: "Book rengøring til Mette Nielsen på mandag kl 10-13"
 
 Friday will:
+
 1. Check RenOS Booking Calendar for conflicts
 2. Create event with NO attendees (MEMORY_19: Prevents auto-invites to customers)
 3. Round times to nearest half-hour (MEMORY_15)
@@ -68,6 +72,7 @@ Friday will:
 Type: "Opret faktura til kunde X, 3 timer arbejde"
 
 Friday will:
+
 1. Search Billy.dk for customer
 2. Calculate amount (3 hours × 349 kr/hour = 1047 kr)
 3. Create DRAFT invoice (MEMORY_17: Never auto-approves)
@@ -78,6 +83,7 @@ Friday will:
 ### Viewing Inbox Tabs
 
 Click tabs at top-right:
+
 - **Email:** Gmail threads from info@rendetalje.dk
 - **Invoices:** Billy.dk invoices with status badges
 - **Calendar:** RenOS Booking Calendar events
@@ -93,6 +99,7 @@ Badge numbers show unread/pending items in each tab.
 ### Settings → Secrets
 
 Update environment variables:
+
 - **GOOGLE_SERVICE_ACCOUNT_KEY:** Service account credentials for Gmail/Calendar
 - **BILLY_API_KEY:** Billy.dk API authentication
 - **GEMINI_API_KEY:** Google AI model access
@@ -103,6 +110,7 @@ Update environment variables:
 ### Database Panel
 
 View and edit data directly:
+
 - Conversations and messages
 - Leads with scores and status
 - Tasks with priorities
@@ -114,6 +122,7 @@ Connection info in bottom-left settings (enable SSL for production).
 ### Dashboard Panel
 
 Monitor Friday usage:
+
 - Active conversations
 - Leads created
 - Tasks completed
@@ -129,6 +138,7 @@ Analytics track UV/PV for published sites.
 **Talk to Manus AI anytime to request changes or add features.**
 
 Friday is 92% production-ready with:
+
 - ✅ Google Gmail integration working (5 threads found)
 - ✅ Google Calendar integration working (5 events found)
 - ✅ Lead creation with photo request workflow

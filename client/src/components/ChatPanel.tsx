@@ -4,7 +4,13 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
 import { Send, Plus, Paperclip, Mic, Bot } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { ActionApprovalModal, type PendingAction } from "./ActionApprovalModal";
@@ -17,25 +23,35 @@ interface Message {
 }
 
 export default function ChatPanel() {
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    number | null
+  >(null);
   const [inputMessage, setInputMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<"gemini-2.5-flash" | "claude-3-5-sonnet" | "gpt-4o" | "manus-ai">("gemini-2.5-flash");
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [selectedModel, setSelectedModel] = useState<
+    "gemini-2.5-flash" | "claude-3-5-sonnet" | "gpt-4o" | "manus-ai"
+  >("gemini-2.5-flash");
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
+    null
+  );
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { data: conversations, refetch: refetchConversations } = trpc.chat.list.useQuery();
-  const { data: conversationData, refetch: refetchMessages } = trpc.chat.get.useQuery(
-    { conversationId: selectedConversationId! },
-    { enabled: !!selectedConversationId }
-  );
+  const { data: conversations, refetch: refetchConversations } =
+    trpc.chat.list.useQuery();
+  const { data: conversationData, refetch: refetchMessages } =
+    trpc.chat.get.useQuery(
+      { conversationId: selectedConversationId! },
+      { enabled: !!selectedConversationId }
+    );
 
   // Poll for title updates when conversation has no title
   useEffect(() => {
     if (!conversationData?.conversation) return;
-    
-    const needsTitleUpdate = !conversationData.conversation.title || conversationData.conversation.title === "New Conversation";
+
+    const needsTitleUpdate =
+      !conversationData.conversation.title ||
+      conversationData.conversation.title === "New Conversation";
     if (!needsTitleUpdate) return;
 
     const interval = setInterval(() => {
@@ -47,24 +63,24 @@ export default function ChatPanel() {
   }, [conversationData?.conversation, refetchMessages, refetchConversations]);
 
   const createConversation = trpc.chat.create.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       setSelectedConversationId(data.id);
       refetchConversations();
     },
   });
 
   const sendMessage = trpc.chat.sendMessage.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       refetchMessages();
       setInputMessage("");
-      
+
       // Check if there's a pending action
       if (data.pendingAction) {
         setPendingAction(data.pendingAction);
         setShowApprovalModal(true);
       }
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("Failed to send message: " + error.message);
     },
   });
@@ -76,7 +92,7 @@ export default function ChatPanel() {
       setShowApprovalModal(false);
       toast.success("Handling udført!");
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("Kunne ikke udføre handling: " + error.message);
     },
   });
@@ -96,7 +112,7 @@ export default function ChatPanel() {
       createConversation.mutate(
         { title: inputMessage.slice(0, 50) },
         {
-          onSuccess: (data) => {
+          onSuccess: data => {
             sendMessage.mutate({
               conversationId: data.id,
               content: inputMessage,
@@ -119,7 +135,9 @@ export default function ChatPanel() {
 
     // TODO: Store "always approve" preference if enabled
     if (alwaysApprove) {
-      console.log(`[Action Approval] User enabled auto-approve for: ${pendingAction.type}`);
+      console.log(
+        `[Action Approval] User enabled auto-approve for: ${pendingAction.type}`
+      );
       // Store in localStorage or user preferences
       localStorage.setItem(`auto-approve-${pendingAction.type}`, "true");
     }
@@ -172,7 +190,9 @@ export default function ChatPanel() {
         <div className="hidden sm:flex w-48 md:w-64 border-r border-border flex-col shrink-0">
           <div className="p-4 border-b border-border">
             <Button
-              onClick={() => createConversation.mutate({ title: "New Conversation" })}
+              onClick={() =>
+                createConversation.mutate({ title: "New Conversation" })
+              }
               className="w-full"
               size="sm"
             >
@@ -182,7 +202,7 @@ export default function ChatPanel() {
           </div>
           <ScrollArea className="flex-1">
             <div className="p-2 space-y-1">
-              {conversations?.map((conv) => (
+              {conversations?.map(conv => (
                 <button
                   key={conv.id}
                   onClick={() => setSelectedConversationId(conv.id)}
@@ -193,14 +213,23 @@ export default function ChatPanel() {
                   }`}
                 >
                   <div className="font-medium truncate">
-                    {conv.title && conv.title !== "New Conversation" ? conv.title : (
+                    {conv.title && conv.title !== "New Conversation" ? (
+                      conv.title
+                    ) : (
                       <span className="text-muted-foreground italic">
-                        Ny samtale {new Date(conv.createdAt).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+                        Ny samtale{" "}
+                        {new Date(conv.createdAt).toLocaleTimeString("da-DK", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
                     )}
                   </div>
                   <div className="text-xs opacity-70">
-                    {new Date(conv.updatedAt).toLocaleDateString('da-DK', { day: '2-digit', month: 'short' })}
+                    {new Date(conv.updatedAt).toLocaleDateString("da-DK", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
                   </div>
                 </button>
               ))}
@@ -213,7 +242,10 @@ export default function ChatPanel() {
           {selectedConversationId ? (
             <>
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-6" ref={scrollRef}>
+              <div
+                className="flex-1 overflow-y-auto p-3 sm:p-6"
+                ref={scrollRef}
+              >
                 <div className="space-y-6 max-w-3xl mx-auto">
                   {conversationData?.messages.map((message, index) => (
                     <div
@@ -226,8 +258,8 @@ export default function ChatPanel() {
                           message.role === "user"
                             ? "bg-primary text-primary-foreground"
                             : message.role === "system"
-                            ? "bg-muted/50 text-muted-foreground text-xs border border-border"
-                            : "bg-muted border border-border"
+                              ? "bg-muted/50 text-muted-foreground text-xs border border-border"
+                              : "bg-muted border border-border"
                         }`}
                       >
                         {message.role === "assistant" ? (
@@ -235,7 +267,9 @@ export default function ChatPanel() {
                             <Streamdown>{message.content}</Streamdown>
                           </div>
                         ) : (
-                          <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                            {message.content}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -245,8 +279,14 @@ export default function ChatPanel() {
                       <div className="bg-muted border border-border rounded-2xl px-4 py-3 shadow-sm">
                         <div className="flex gap-1.5">
                           <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div
+                            className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.1s" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.2s" }}
+                          ></div>
                         </div>
                       </div>
                     </div>
@@ -259,13 +299,20 @@ export default function ChatPanel() {
                 <div className="max-w-3xl mx-auto space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Bot className="w-4 h-4" />
-                    <Select value={selectedModel} onValueChange={(value: any) => setSelectedModel(value)}>
+                    <Select
+                      value={selectedModel}
+                      onValueChange={(value: any) => setSelectedModel(value)}
+                    >
                       <SelectTrigger className="w-[200px] h-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                        <SelectItem value="claude-3-5-sonnet">Claude 3.5 Sonnet</SelectItem>
+                        <SelectItem value="gemini-2.5-flash">
+                          Gemini 2.5 Flash
+                        </SelectItem>
+                        <SelectItem value="claude-3-5-sonnet">
+                          Claude 3.5 Sonnet
+                        </SelectItem>
                         <SelectItem value="gpt-4o">GPT-4o</SelectItem>
                         <SelectItem value="manus-ai">Manus AI</SelectItem>
                       </SelectContent>
@@ -277,8 +324,10 @@ export default function ChatPanel() {
                     </Button>
                     <Input
                       value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                      onChange={e => setInputMessage(e.target.value)}
+                      onKeyDown={e =>
+                        e.key === "Enter" && !e.shiftKey && handleSendMessage()
+                      }
                       placeholder="Message Friday..."
                       className="flex-1"
                     />
@@ -288,7 +337,9 @@ export default function ChatPanel() {
                       onClick={handleVoiceInput}
                       className="shrink-0"
                     >
-                      <Mic className={`w-4 h-4 ${isRecording ? "animate-pulse" : ""}`} />
+                      <Mic
+                        className={`w-4 h-4 ${isRecording ? "animate-pulse" : ""}`}
+                      />
                     </Button>
                     <Button
                       onClick={handleSendMessage}
@@ -306,7 +357,9 @@ export default function ChatPanel() {
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <div className="text-center space-y-4">
                 <div className="text-6xl">💬</div>
-                <p className="text-lg">Select a conversation or start a new chat</p>
+                <p className="text-lg">
+                  Select a conversation or start a new chat
+                </p>
               </div>
             </div>
           )}

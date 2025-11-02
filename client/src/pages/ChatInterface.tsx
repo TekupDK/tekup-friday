@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { getLoginUrl } from "@/const";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -14,10 +14,31 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, User, LogOut } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Menu,
+  User,
+  LogOut,
+  Settings,
+  HelpCircle,
+  Moon,
+  Sun,
+  Keyboard,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import ChatPanel from "@/components/ChatPanel";
 import InboxPanel from "@/components/InboxPanel";
+import { useTheme } from "@/contexts/ThemeContext";
 
 /**
  * Friday Chat Interface - Main Layout
@@ -27,11 +48,30 @@ import InboxPanel from "@/components/InboxPanel";
  */
 export default function ChatInterface() {
   const { user, loading, isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme, switchable } = useTheme();
   const [activeInboxTab, setActiveInboxTab] = useState<
     "email" | "invoices" | "calendar" | "leads" | "tasks"
   >("email");
   const [mobileView, setMobileView] = useState<"chat" | "inbox">("chat");
   const [showMobileInbox, setShowMobileInbox] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -80,6 +120,25 @@ export default function ChatInterface() {
           </div>
         </div>
 
+        {/* Middle: Status Indicator */}
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
+          {isOnline ? (
+            <>
+              <Wifi className="w-3.5 h-3.5 text-green-500" />
+              <span className="text-xs font-medium text-muted-foreground">
+                Synced
+              </span>
+            </>
+          ) : (
+            <>
+              <WifiOff className="w-3.5 h-3.5 text-orange-500" />
+              <span className="text-xs font-medium text-muted-foreground">
+                Offline
+              </span>
+            </>
+          )}
+        </div>
+
         {/* Right: User Info with Dropdown */}
         <div className="flex items-center gap-2">
           {/* Mobile Inbox Toggle */}
@@ -115,9 +174,46 @@ export default function ChatInterface() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem disabled>
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setShowProfile(true)}
+                className="cursor-pointer"
+              >
                 <User className="mr-2 h-4 w-4" />
                 <span>My Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setShowSettings(true)}
+                className="cursor-pointer"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {switchable && toggleTheme && (
+                <DropdownMenuItem
+                  onClick={toggleTheme}
+                  className="cursor-pointer"
+                >
+                  {theme === "dark" ? (
+                    <Sun className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Moon className="mr-2 h-4 w-4" />
+                  )}
+                  <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={() => setShowKeyboardShortcuts(true)}
+                className="cursor-pointer"
+              >
+                <Keyboard className="mr-2 h-4 w-4" />
+                <span>Keyboard Shortcuts</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <HelpCircle className="mr-2 h-4 w-4" />
+                <span>Help & Support</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -145,9 +241,44 @@ export default function ChatInterface() {
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>
+              <DropdownMenuItem
+                onClick={() => setShowProfile(true)}
+                className="cursor-pointer"
+              >
                 <User className="mr-2 h-4 w-4" />
                 <span>My Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setShowSettings(true)}
+                className="cursor-pointer"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {switchable && toggleTheme && (
+                <DropdownMenuItem
+                  onClick={toggleTheme}
+                  className="cursor-pointer"
+                >
+                  {theme === "dark" ? (
+                    <Sun className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Moon className="mr-2 h-4 w-4" />
+                  )}
+                  <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={() => setShowKeyboardShortcuts(true)}
+                className="cursor-pointer"
+              >
+                <Keyboard className="mr-2 h-4 w-4" />
+                <span>Keyboard Shortcuts</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <HelpCircle className="mr-2 h-4 w-4" />
+                <span>Help & Support</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -187,6 +318,171 @@ export default function ChatInterface() {
       <div className="flex md:hidden flex-1 overflow-hidden min-h-0">
         <ChatPanel />
       </div>
+
+      {/* Profile Dialog */}
+      <Dialog open={showProfile} onOpenChange={setShowProfile}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>My Profile</DialogTitle>
+            <DialogDescription>
+              View and manage your profile information
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-primary font-semibold text-2xl">
+                  {user?.name?.charAt(0) || "U"}
+                </span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">
+                  {user?.name || "User"}
+                </h3>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              </div>
+            </div>
+            <div className="space-y-3 pt-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Role</p>
+                  <p className="font-medium capitalize">
+                    {user?.role || "User"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Status</p>
+                  <p className="font-medium text-green-500">Active</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Login Method</p>
+                  <p className="font-medium capitalize">
+                    {user?.loginMethod || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Settings</DialogTitle>
+            <DialogDescription>
+              Customize your Friday AI experience
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <h4 className="font-medium text-sm">Appearance</h4>
+              <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">Theme</p>
+                  <p className="text-xs text-muted-foreground">
+                    Current: {theme === "dark" ? "Dark" : "Light"} mode
+                  </p>
+                </div>
+                {switchable && toggleTheme && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleTheme}
+                    className="gap-2"
+                  >
+                    {theme === "dark" ? (
+                      <>
+                        <Sun className="h-4 w-4" />
+                        Light
+                      </>
+                    ) : (
+                      <>
+                        <Moon className="h-4 w-4" />
+                        Dark
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-medium text-sm">Notifications</h4>
+              <div className="p-3 rounded-lg border">
+                <p className="text-sm text-muted-foreground">
+                  Email and push notification settings will be available soon.
+                </p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Keyboard Shortcuts Dialog */}
+      <Dialog
+        open={showKeyboardShortcuts}
+        onOpenChange={setShowKeyboardShortcuts}
+      >
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            <DialogDescription>
+              Speed up your workflow with these keyboard shortcuts
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              <div>
+                <h4 className="font-medium text-sm mb-2">General</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-2 border-b">
+                    <span className="text-sm">Open Command Menu</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold border rounded bg-muted">
+                      Ctrl + K
+                    </kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-b">
+                    <span className="text-sm">Search</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold border rounded bg-muted">
+                      Ctrl + /
+                    </kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-b">
+                    <span className="text-sm">Toggle Sidebar</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold border rounded bg-muted">
+                      Ctrl + B
+                    </kbd>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm mb-2">Chat</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-2 border-b">
+                    <span className="text-sm">New Chat</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold border rounded bg-muted">
+                      Ctrl + N
+                    </kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-b">
+                    <span className="text-sm">Focus Input</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold border rounded bg-muted">
+                      Ctrl + I
+                    </kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-b">
+                    <span className="text-sm">Send Message</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold border rounded bg-muted">
+                      Ctrl + Enter
+                    </kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
