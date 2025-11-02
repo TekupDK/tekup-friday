@@ -33,12 +33,15 @@ export const customerRouter = router({
   getProfileByLeadId: protectedProcedure
     .input(z.object({ leadId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const profile = await getCustomerProfileByLeadId(input.leadId, ctx.user.id);
+      const profile = await getCustomerProfileByLeadId(
+        input.leadId,
+        ctx.user.id
+      );
 
       if (!profile) {
         // Create profile from lead if doesn't exist
         const leads = await getUserLeads(ctx.user.id);
-        const lead = leads.find((l) => l.id === input.leadId);
+        const lead = leads.find(l => l.id === input.leadId);
         if (!lead || !lead.email) {
           throw new Error("Lead not found or missing email");
         }
@@ -97,14 +100,20 @@ export const customerRouter = router({
   getConversation: protectedProcedure
     .input(z.object({ customerId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const existing = await getCustomerConversation(input.customerId, ctx.user.id);
+      const existing = await getCustomerConversation(
+        input.customerId,
+        ctx.user.id
+      );
 
       if (existing) {
         return existing;
       }
 
       // Create new conversation for customer
-      const customer = await getCustomerProfileById(input.customerId, ctx.user.id);
+      const customer = await getCustomerProfileById(
+        input.customerId,
+        ctx.user.id
+      );
       if (!customer) {
         throw new Error("Customer not found");
       }
@@ -129,13 +138,19 @@ export const customerRouter = router({
   syncBillyInvoices: protectedProcedure
     .input(z.object({ customerId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const customer = await getCustomerProfileById(input.customerId, ctx.user.id);
+      const customer = await getCustomerProfileById(
+        input.customerId,
+        ctx.user.id
+      );
       if (!customer) {
         throw new Error("Customer not found");
       }
 
       // Sync invoices from Billy
-      const invoices = await syncBillyInvoicesForCustomer(customer.email, customer.billyCustomerId);
+      const invoices = await syncBillyInvoicesForCustomer(
+        customer.email,
+        customer.billyCustomerId
+      );
 
       // Add/update invoices in database
       for (const invoice of invoices) {
@@ -146,7 +161,9 @@ export const customerRouter = router({
           amount: invoice.amount,
           paidAmount: invoice.paidAmount || 0,
           status: invoice.state as any,
-          entryDate: invoice.entryDate ? new Date(invoice.entryDate) : undefined,
+          entryDate: invoice.entryDate
+            ? new Date(invoice.entryDate)
+            : undefined,
           dueDate: invoice.dueDate ? new Date(invoice.dueDate) : undefined,
           paidDate: invoice.paidDate ? new Date(invoice.paidDate) : undefined,
         });
@@ -180,7 +197,10 @@ export const customerRouter = router({
   syncGmailEmails: protectedProcedure
     .input(z.object({ customerId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const customer = await getCustomerProfileById(input.customerId, ctx.user.id);
+      const customer = await getCustomerProfileById(
+        input.customerId,
+        ctx.user.id
+      );
       if (!customer) {
         throw new Error("Customer not found");
       }
@@ -215,7 +235,10 @@ export const customerRouter = router({
   generateResume: protectedProcedure
     .input(z.object({ customerId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const customer = await getCustomerProfileById(input.customerId, ctx.user.id);
+      const customer = await getCustomerProfileById(
+        input.customerId,
+        ctx.user.id
+      );
       if (!customer) {
         throw new Error("Customer not found");
       }
@@ -227,13 +250,16 @@ export const customerRouter = router({
       // Build context for AI
       const invoiceSummary = invoices
         .map(
-          (inv) =>
+          inv =>
             `Invoice ${inv.invoiceNo}: ${inv.amount / 100} DKK, status: ${inv.status}, due: ${inv.dueDate?.toISOString().split("T")[0]}`
         )
         .join("\n");
 
       const emailSummary = emails
-        .map((email) => `Email: ${email.subject} (${email.lastMessageDate?.toISOString().split("T")[0]})`)
+        .map(
+          email =>
+            `Email: ${email.subject} (${email.lastMessageDate?.toISOString().split("T")[0]})`
+        )
         .join("\n");
 
       const prompt = `Generate a professional customer resume/summary for ${customer.name || customer.email}.
@@ -276,7 +302,10 @@ Format as clear, concise bullet points in Danish.`;
       });
 
       const messageContent = response.choices[0]?.message?.content;
-      const aiResume = typeof messageContent === "string" ? messageContent : "Failed to generate resume";
+      const aiResume =
+        typeof messageContent === "string"
+          ? messageContent
+          : "Failed to generate resume";
 
       // Update customer profile with AI resume
       const { getDb } = await import("./db");
@@ -309,7 +338,10 @@ Format as clear, concise bullet points in Danish.`;
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const customer = await getCustomerProfileById(input.customerId, ctx.user.id);
+      const customer = await getCustomerProfileById(
+        input.customerId,
+        ctx.user.id
+      );
       if (!customer) {
         throw new Error("Customer not found");
       }

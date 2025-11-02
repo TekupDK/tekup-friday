@@ -42,7 +42,7 @@ import { getAllCustomerProfiles } from "./customer-db";
 import { customerRouter } from "./customer-router";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
+  // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   customer: customerRouter,
   auth: router({
@@ -58,87 +58,197 @@ export const appRouter = router({
 
   // Chat interface
   chat: router({
-    list: protectedProcedure.query(async ({ ctx }) => getUserConversations(ctx.user.id)),
-    get: protectedProcedure.input(z.object({ conversationId: z.number() })).query(async ({ input }) => {
-      const conversation = await getConversation(input.conversationId);
-      if (!conversation) return null;
-      const messages = await getConversationMessages(input.conversationId);
-      return { conversation, messages };
-    }),
-    create: protectedProcedure.input(z.object({ title: z.string().optional() })).mutation(async ({ ctx, input }) => {
-      return createConversation({ userId: ctx.user.id, title: input.title || "New Conversation" });
-    }),
-    sendMessage: protectedProcedure.input(z.object({ conversationId: z.number(), content: z.string(), model: z.enum(["gemini-2.5-flash", "claude-3-5-sonnet", "gpt-4o", "manus-ai"]).optional(), attachments: z.array(z.object({ url: z.string(), name: z.string(), type: z.string() })).optional() })).mutation(async ({ ctx, input }) => {
-      const userMessage = await createMessage({ conversationId: input.conversationId, role: "user", content: input.content, attachments: input.attachments });
-      const messages = await getConversationMessages(input.conversationId);
-      
-      // Check if this is the first message and conversation has no title
-      const conversation = await getConversation(input.conversationId);
-      if (conversation && messages.length === 1 && (!conversation.title || conversation.title === "New Conversation")) {
-        // Generate title asynchronously (non-blocking)
-        generateConversationTitle(input.content, input.model).then(async (title) => {
-          await updateConversationTitle(input.conversationId, title);
-          console.log(`[Chat] Auto-generated title for conversation ${input.conversationId}: ${title}`);
-        }).catch((error) => {
-          console.error(`[Chat] Title generation failed for conversation ${input.conversationId}:`, error);
+    list: protectedProcedure.query(async ({ ctx }) =>
+      getUserConversations(ctx.user.id)
+    ),
+    get: protectedProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .query(async ({ input }) => {
+        const conversation = await getConversation(input.conversationId);
+        if (!conversation) return null;
+        const messages = await getConversationMessages(input.conversationId);
+        return { conversation, messages };
+      }),
+    create: protectedProcedure
+      .input(z.object({ title: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        return createConversation({
+          userId: ctx.user.id,
+          title: input.title || "New Conversation",
         });
-      }
-      
-      const aiMessages = messages.map((m) => ({ role: m.role as "user" | "assistant" | "system", content: m.content }));
-      const aiResponse = await routeAI({ messages: aiMessages, taskType: "chat", userId: ctx.user.id, preferredModel: input.model, requireApproval: true });
-      const assistantMessage = await createMessage({ conversationId: input.conversationId, role: "assistant", content: aiResponse.content, model: aiResponse.model });
-      await trackEvent({ userId: ctx.user.id, eventType: "message_sent", eventData: { conversationId: input.conversationId } });
-      return { userMessage, assistantMessage, pendingAction: aiResponse.pendingAction };
-    }),
-    updateTitle: protectedProcedure.input(z.object({ conversationId: z.number(), title: z.string() })).mutation(async ({ input }) => {
-      await updateConversationTitle(input.conversationId, input.title);
-      return { success: true };
-    }),
-    analyzeInvoice: protectedProcedure.input(z.object({ invoiceData: z.string() })).mutation(async ({ input }) => {
-      // Use AI to analyze the invoice
-      const aiResponse = await routeAI({
-        messages: [
-          { role: "system", content: "You are a financial analyst expert. Analyze invoices and provide insights about payment status, completeness, anomalies, and recommendations." },
-          { role: "user", content: input.invoiceData },
-        ],
-        taskType: "data-analysis",
-        preferredModel: "gemini-2.5-flash",
-      });
-      return { analysis: aiResponse.content };
-    }),
-    submitAnalysisFeedback: protectedProcedure.input(z.object({ invoiceId: z.string(), rating: z.enum(["up", "down"]), analysis: z.string() })).mutation(async ({ ctx, input }) => {
-      // Store feedback in database for analytics
-      // For now, just log it (can be extended to save to DB later)
-      console.log(`[Feedback] User ${ctx.user.id} rated invoice ${input.invoiceId} analysis as ${input.rating}`);
-      await trackEvent({ userId: ctx.user.id, eventType: "analysis_feedback", eventData: { invoiceId: input.invoiceId, rating: input.rating } });
-      return { success: true };
-    }),
-    executeAction: protectedProcedure.input(z.object({ conversationId: z.number(), actionId: z.string(), actionType: z.string(), actionParams: z.record(z.string(), z.any()) })).mutation(async ({ ctx, input }) => {
-      // Execute the approved action
-      const intent = { intent: input.actionType as any, params: input.actionParams, confidence: 1.0 };
-      const actionResult = await executeAction(intent, ctx.user.id);
-      
-      // Create system message with action result
-      const resultMessage = await createMessage({
-        conversationId: input.conversationId,
-        role: "system",
-        content: `[Action Executed] ${actionResult.success ? "Success" : "Failed"}: ${actionResult.message}${actionResult.data ? "\nData: " + JSON.stringify(actionResult.data, null, 2) : ""}${actionResult.error ? "\nError: " + actionResult.error : ""}`,
-      });
-      
-      // Get AI response acknowledging the action
-      const messages = await getConversationMessages(input.conversationId);
-      const aiMessages = messages.map((m) => ({ role: m.role as "user" | "assistant" | "system", content: m.content }));
-      const aiResponse = await routeAI({ messages: aiMessages, taskType: "chat", userId: ctx.user.id, requireApproval: false });
-      
-      const assistantMessage = await createMessage({
-        conversationId: input.conversationId,
-        role: "assistant",
-        content: aiResponse.content,
-        model: aiResponse.model,
-      });
-      
-      return { actionResult, assistantMessage };
-    }),
+      }),
+    sendMessage: protectedProcedure
+      .input(
+        z.object({
+          conversationId: z.number(),
+          content: z.string(),
+          model: z
+            .enum([
+              "gemini-2.5-flash",
+              "claude-3-5-sonnet",
+              "gpt-4o",
+              "manus-ai",
+            ])
+            .optional(),
+          attachments: z
+            .array(
+              z.object({ url: z.string(), name: z.string(), type: z.string() })
+            )
+            .optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userMessage = await createMessage({
+          conversationId: input.conversationId,
+          role: "user",
+          content: input.content,
+          attachments: input.attachments,
+        });
+        const messages = await getConversationMessages(input.conversationId);
+
+        // Check if this is the first message and conversation has no title
+        const conversation = await getConversation(input.conversationId);
+        if (
+          conversation &&
+          messages.length === 1 &&
+          (!conversation.title || conversation.title === "New Conversation")
+        ) {
+          // Generate title asynchronously (non-blocking)
+          generateConversationTitle(input.content, input.model)
+            .then(async title => {
+              await updateConversationTitle(input.conversationId, title);
+              console.log(
+                `[Chat] Auto-generated title for conversation ${input.conversationId}: ${title}`
+              );
+            })
+            .catch(error => {
+              console.error(
+                `[Chat] Title generation failed for conversation ${input.conversationId}:`,
+                error
+              );
+            });
+        }
+
+        const aiMessages = messages.map(m => ({
+          role: m.role as "user" | "assistant" | "system",
+          content: m.content,
+        }));
+        const aiResponse = await routeAI({
+          messages: aiMessages,
+          taskType: "chat",
+          userId: ctx.user.id,
+          preferredModel: input.model,
+          requireApproval: true,
+        });
+        const assistantMessage = await createMessage({
+          conversationId: input.conversationId,
+          role: "assistant",
+          content: aiResponse.content,
+          model: aiResponse.model,
+        });
+        await trackEvent({
+          userId: ctx.user.id,
+          eventType: "message_sent",
+          eventData: { conversationId: input.conversationId },
+        });
+        return {
+          userMessage,
+          assistantMessage,
+          pendingAction: aiResponse.pendingAction,
+        };
+      }),
+    updateTitle: protectedProcedure
+      .input(z.object({ conversationId: z.number(), title: z.string() }))
+      .mutation(async ({ input }) => {
+        await updateConversationTitle(input.conversationId, input.title);
+        return { success: true };
+      }),
+    analyzeInvoice: protectedProcedure
+      .input(z.object({ invoiceData: z.string() }))
+      .mutation(async ({ input }) => {
+        // Use AI to analyze the invoice
+        const aiResponse = await routeAI({
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a financial analyst expert. Analyze invoices and provide insights about payment status, completeness, anomalies, and recommendations.",
+            },
+            { role: "user", content: input.invoiceData },
+          ],
+          taskType: "data-analysis",
+          preferredModel: "gemini-2.5-flash",
+        });
+        return { analysis: aiResponse.content };
+      }),
+    submitAnalysisFeedback: protectedProcedure
+      .input(
+        z.object({
+          invoiceId: z.string(),
+          rating: z.enum(["up", "down"]),
+          analysis: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        // Store feedback in database for analytics
+        // For now, just log it (can be extended to save to DB later)
+        console.log(
+          `[Feedback] User ${ctx.user.id} rated invoice ${input.invoiceId} analysis as ${input.rating}`
+        );
+        await trackEvent({
+          userId: ctx.user.id,
+          eventType: "analysis_feedback",
+          eventData: { invoiceId: input.invoiceId, rating: input.rating },
+        });
+        return { success: true };
+      }),
+    executeAction: protectedProcedure
+      .input(
+        z.object({
+          conversationId: z.number(),
+          actionId: z.string(),
+          actionType: z.string(),
+          actionParams: z.record(z.string(), z.any()),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        // Execute the approved action
+        const intent = {
+          intent: input.actionType as any,
+          params: input.actionParams,
+          confidence: 1.0,
+        };
+        const actionResult = await executeAction(intent, ctx.user.id);
+
+        // Create system message with action result
+        const resultMessage = await createMessage({
+          conversationId: input.conversationId,
+          role: "system",
+          content: `[Action Executed] ${actionResult.success ? "Success" : "Failed"}: ${actionResult.message}${actionResult.data ? "\nData: " + JSON.stringify(actionResult.data, null, 2) : ""}${actionResult.error ? "\nError: " + actionResult.error : ""}`,
+        });
+
+        // Get AI response acknowledging the action
+        const messages = await getConversationMessages(input.conversationId);
+        const aiMessages = messages.map(m => ({
+          role: m.role as "user" | "assistant" | "system",
+          content: m.content,
+        }));
+        const aiResponse = await routeAI({
+          messages: aiMessages,
+          taskType: "chat",
+          userId: ctx.user.id,
+          requireApproval: false,
+        });
+
+        const assistantMessage = await createMessage({
+          conversationId: input.conversationId,
+          role: "assistant",
+          content: aiResponse.content,
+          model: aiResponse.model,
+        });
+
+        return { actionResult, assistantMessage };
+      }),
   }),
 
   // Inbox modules
@@ -146,14 +256,17 @@ export const appRouter = router({
     email: router({
       // Sync emails from Gmail to database
       sync: protectedProcedure.mutation(async ({ ctx }) => {
-        if (!ctx.user) throw new Error('Not authenticated');
-        
+        if (!ctx.user) throw new Error("Not authenticated");
+
         try {
-          console.log('[Email Sync] Starting sync...');
-          const gmailThreads = await searchGmailThreads({ query: 'in:inbox', maxResults: 50 });
-          
+          console.log("[Email Sync] Starting sync...");
+          const gmailThreads = await searchGmailThreads({
+            query: "in:inbox",
+            maxResults: 50,
+          });
+
           // Transform Gmail threads to database format
-          const emailsToSave = gmailThreads.flatMap(thread => 
+          const emailsToSave = gmailThreads.flatMap(thread =>
             thread.messages.map(msg => ({
               userId: ctx.user!.id,
               threadId: 0, // We'll handle thread linking later
@@ -175,148 +288,305 @@ export const appRouter = router({
               internalDate: new Date(msg.date),
             }))
           );
-          
+
           // Save to database
-          const { saveEmailMessages } = await import('./db');
+          const { saveEmailMessages } = await import("./db");
           await saveEmailMessages(emailsToSave);
-          
+
           console.log(`[Email Sync] Synced ${emailsToSave.length} emails`);
           return { success: true, synced: emailsToSave.length };
         } catch (error: any) {
-          console.error('[Email Sync] Error:', error);
+          console.error("[Email Sync] Error:", error);
           throw new Error(`Email sync failed: ${error.message}`);
         }
       }),
-      
-      list: protectedProcedure.input(z.object({ maxResults: z.number().optional(), query: z.string().optional() })).query(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error('Not authenticated');
-        
-        // INSTANT LOAD: Read from database first
-        const { getUserEmails } = await import('./db');
-        const dbEmails = await getUserEmails(ctx.user.id, input.maxResults || 50);
-        
-        console.log(`[Email List] Loaded ${dbEmails.length} emails from database`);
-        
-        // Transform database emails to Gmail thread format for frontend compatibility
-        if (dbEmails.length > 0) {
-          // Group by threadId
-          const threadMap = new Map<string, any>();
-          
-          for (const email of dbEmails) {
-            if (!threadMap.has(email.gmailThreadId)) {
-              threadMap.set(email.gmailThreadId, {
-                id: email.gmailThreadId,
-                snippet: email.snippet || '',
-                messages: []
+
+      list: protectedProcedure
+        .input(
+          z.object({
+            maxResults: z.number().optional(),
+            query: z.string().optional(),
+          })
+        )
+        .query(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Not authenticated");
+
+          // INSTANT LOAD: Read from database first
+          const { getUserEmails } = await import("./db");
+          const dbEmails = await getUserEmails(
+            ctx.user.id,
+            input.maxResults || 50
+          );
+
+          console.log(
+            `[Email List] Loaded ${dbEmails.length} emails from database`
+          );
+
+          // Transform database emails to Gmail thread format for frontend compatibility
+          if (dbEmails.length > 0) {
+            // Group by threadId
+            const threadMap = new Map<string, any>();
+
+            for (const email of dbEmails) {
+              if (!threadMap.has(email.gmailThreadId)) {
+                threadMap.set(email.gmailThreadId, {
+                  id: email.gmailThreadId,
+                  snippet: email.snippet || "",
+                  messages: [],
+                });
+              }
+
+              const thread = threadMap.get(email.gmailThreadId);
+              thread.messages.push({
+                id: email.gmailMessageId,
+                threadId: email.gmailThreadId,
+                from: email.from,
+                to: email.to,
+                subject: email.subject || "",
+                body: email.bodyText || "",
+                date: email.date.toISOString(),
               });
             }
-            
-            const thread = threadMap.get(email.gmailThreadId);
-            thread.messages.push({
-              id: email.gmailMessageId,
-              threadId: email.gmailThreadId,
-              from: email.from,
-              to: email.to,
-              subject: email.subject || '',
-              body: email.bodyText || '',
-              date: email.date.toISOString(),
-            });
+
+            return Array.from(threadMap.values());
           }
-          
-          return Array.from(threadMap.values());
-        }
-        
-        // Fallback: If no database emails, return demo data
-        console.log('[Email List] No database emails, returning demo data');
-        return [
-          {
-            id: 'demo-1',
-            snippet: 'Hej, jeg vil gerne have et tilbud på hovedrengøring af mit hus på 120m²...',
-            messages: [{
-              id: 'msg-1',
-              threadId: 'demo-1',
-              from: 'kunde@example.dk',
-              to: 'info@rendetalje.dk',
-              subject: 'Forespørgsel på hovedrengøring',
-              body: 'Hej,\n\nJeg vil gerne have et tilbud på hovedrengøring af mit hus på 120m². Hvornår har I tid?\n\nMed venlig hilsen\nAnders',
-              date: new Date().toISOString(),
-            }]
-          },
-          {
-            id: 'demo-2',
-            snippet: 'Tak for seneste rengøring! Det så fantastisk ud. Jeg vil gerne booke...',
-            messages: [{
-              id: 'msg-2',
-              threadId: 'demo-2',
-              from: 'maria@test.dk',
-              to: 'info@rendetalje.dk',
-              subject: 'Tak og ny booking',
-              body: 'Hej,\n\nTak for seneste rengøring! Det så fantastisk ud. Jeg vil gerne booke fast rengøring hver 14. dag.\n\nVenlig hilsen\nMaria',
-              date: new Date(Date.now() - 3600000).toISOString(),
-            }]
-          }
-        ];
-      }),
-      get: protectedProcedure.input(z.object({ threadId: z.string() })).query(async ({ input }) => getGmailThread(input.threadId)),
-      search: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => searchGmailThreads({ query: input.query, maxResults: 50 })),
-      createDraft: protectedProcedure.input(z.object({ to: z.string(), subject: z.string(), body: z.string(), cc: z.string().optional(), bcc: z.string().optional() })).mutation(async ({ input }) => createGmailDraft(input)),
+
+          // Fallback: If no database emails, return demo data
+          console.log("[Email List] No database emails, returning demo data");
+          return [
+            {
+              id: "demo-1",
+              snippet:
+                "Hej, jeg vil gerne have et tilbud på hovedrengøring af mit hus på 120m²...",
+              messages: [
+                {
+                  id: "msg-1",
+                  threadId: "demo-1",
+                  from: "kunde@example.dk",
+                  to: "info@rendetalje.dk",
+                  subject: "Forespørgsel på hovedrengøring",
+                  body: "Hej,\n\nJeg vil gerne have et tilbud på hovedrengøring af mit hus på 120m². Hvornår har I tid?\n\nMed venlig hilsen\nAnders",
+                  date: new Date().toISOString(),
+                },
+              ],
+            },
+            {
+              id: "demo-2",
+              snippet:
+                "Tak for seneste rengøring! Det så fantastisk ud. Jeg vil gerne booke...",
+              messages: [
+                {
+                  id: "msg-2",
+                  threadId: "demo-2",
+                  from: "maria@test.dk",
+                  to: "info@rendetalje.dk",
+                  subject: "Tak og ny booking",
+                  body: "Hej,\n\nTak for seneste rengøring! Det så fantastisk ud. Jeg vil gerne booke fast rengøring hver 14. dag.\n\nVenlig hilsen\nMaria",
+                  date: new Date(Date.now() - 3600000).toISOString(),
+                },
+              ],
+            },
+          ];
+        }),
+      get: protectedProcedure
+        .input(z.object({ threadId: z.string() }))
+        .query(async ({ input }) => getGmailThread(input.threadId)),
+      search: protectedProcedure
+        .input(z.object({ query: z.string() }))
+        .query(async ({ input }) =>
+          searchGmailThreads({ query: input.query, maxResults: 50 })
+        ),
+      createDraft: protectedProcedure
+        .input(
+          z.object({
+            to: z.string(),
+            subject: z.string(),
+            body: z.string(),
+            cc: z.string().optional(),
+            bcc: z.string().optional(),
+          })
+        )
+        .mutation(async ({ input }) => createGmailDraft(input)),
     }),
     invoices: router({
       list: protectedProcedure.query(async () => {
-        console.log('💰 [Router] Fetching invoices with customer names from Billy...');
+        console.log(
+          "💰 [Router] Fetching invoices with customer names from Billy..."
+        );
         return getInvoicesWithCustomerNames();
       }),
-      create: protectedProcedure.input(z.object({ contactId: z.string(), entryDate: z.string(), paymentTermsDays: z.number().optional(), lines: z.array(z.object({ description: z.string(), quantity: z.number(), unitPrice: z.number(), productId: z.string().optional() })) })).mutation(async ({ input }) => createBillyInvoice(input)),
+      create: protectedProcedure
+        .input(
+          z.object({
+            contactId: z.string(),
+            entryDate: z.string(),
+            paymentTermsDays: z.number().optional(),
+            lines: z.array(
+              z.object({
+                description: z.string(),
+                quantity: z.number(),
+                unitPrice: z.number(),
+                productId: z.string().optional(),
+              })
+            ),
+          })
+        )
+        .mutation(async ({ input }) => createBillyInvoice(input)),
     }),
     calendar: router({
-      list: protectedProcedure.input(z.object({ timeMin: z.string().optional(), timeMax: z.string().optional(), maxResults: z.number().optional() })).query(async ({ input }) => listCalendarEvents(input)),
-      create: protectedProcedure.input(z.object({ summary: z.string(), description: z.string().optional(), start: z.string(), end: z.string(), location: z.string().optional() })).mutation(async ({ input }) => createCalendarEvent(input)),
-      checkAvailability: protectedProcedure.input(z.object({ start: z.string(), end: z.string() })).query(async ({ input }) => checkCalendarAvailability(input)),
-      findFreeSlots: protectedProcedure.input(z.object({ startDate: z.string(), endDate: z.string(), durationHours: z.number() })).query(async ({ input }) => findFreeSlots(input)),
+      list: protectedProcedure
+        .input(
+          z.object({
+            timeMin: z.string().optional(),
+            timeMax: z.string().optional(),
+            maxResults: z.number().optional(),
+          })
+        )
+        .query(async ({ input }) => listCalendarEvents(input)),
+      create: protectedProcedure
+        .input(
+          z.object({
+            summary: z.string(),
+            description: z.string().optional(),
+            start: z.string(),
+            end: z.string(),
+            location: z.string().optional(),
+          })
+        )
+        .mutation(async ({ input }) => createCalendarEvent(input)),
+      checkAvailability: protectedProcedure
+        .input(z.object({ start: z.string(), end: z.string() }))
+        .query(async ({ input }) => checkCalendarAvailability(input)),
+      findFreeSlots: protectedProcedure
+        .input(
+          z.object({
+            startDate: z.string(),
+            endDate: z.string(),
+            durationHours: z.number(),
+          })
+        )
+        .query(async ({ input }) => findFreeSlots(input)),
     }),
     leads: router({
-      list: protectedProcedure.query(async ({ ctx }) => getUserLeads(ctx.user.id)),
-      create: protectedProcedure.input(z.object({ source: z.string(), name: z.string().optional(), email: z.string().optional(), phone: z.string().optional(), company: z.string().optional(), notes: z.string().optional(), metadata: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ ctx, input }) => {
-        const lead = await createLead({ userId: ctx.user.id, source: input.source, name: input.name, email: input.email, phone: input.phone, company: input.company, notes: input.notes, metadata: input.metadata });
-        await trackEvent({ userId: ctx.user.id, eventType: "lead_created", eventData: { leadId: lead.id, source: input.source } });
-        return lead;
-      }),
-      updateStatus: protectedProcedure.input(z.object({ leadId: z.number(), status: z.enum(["new", "contacted", "qualified", "proposal", "won", "lost"]) })).mutation(async ({ input }) => {
-        await updateLeadStatus(input.leadId, input.status);
-        return { success: true };
-      }),
-      updateScore: protectedProcedure.input(z.object({ leadId: z.number(), score: z.number() })).mutation(async ({ input }) => {
-        await updateLeadScore(input.leadId, input.score);
-        return { success: true };
-      }),
+      list: protectedProcedure.query(async ({ ctx }) =>
+        getUserLeads(ctx.user.id)
+      ),
+      create: protectedProcedure
+        .input(
+          z.object({
+            source: z.string(),
+            name: z.string().optional(),
+            email: z.string().optional(),
+            phone: z.string().optional(),
+            company: z.string().optional(),
+            notes: z.string().optional(),
+            metadata: z.record(z.string(), z.unknown()).optional(),
+          })
+        )
+        .mutation(async ({ ctx, input }) => {
+          const lead = await createLead({
+            userId: ctx.user.id,
+            source: input.source,
+            name: input.name,
+            email: input.email,
+            phone: input.phone,
+            company: input.company,
+            notes: input.notes,
+            metadata: input.metadata,
+          });
+          await trackEvent({
+            userId: ctx.user.id,
+            eventType: "lead_created",
+            eventData: { leadId: lead.id, source: input.source },
+          });
+          return lead;
+        }),
+      updateStatus: protectedProcedure
+        .input(
+          z.object({
+            leadId: z.number(),
+            status: z.enum([
+              "new",
+              "contacted",
+              "qualified",
+              "proposal",
+              "won",
+              "lost",
+            ]),
+          })
+        )
+        .mutation(async ({ input }) => {
+          await updateLeadStatus(input.leadId, input.status);
+          return { success: true };
+        }),
+      updateScore: protectedProcedure
+        .input(z.object({ leadId: z.number(), score: z.number() }))
+        .mutation(async ({ input }) => {
+          await updateLeadScore(input.leadId, input.score);
+          return { success: true };
+        }),
     }),
     tasks: router({
-      list: protectedProcedure.query(async ({ ctx }) => getUserTasks(ctx.user.id)),
-      create: protectedProcedure.input(z.object({ title: z.string(), description: z.string().optional(), dueDate: z.string().optional(), priority: z.enum(["low", "medium", "high", "urgent"]).optional(), relatedTo: z.string().optional() })).mutation(async ({ ctx, input }) => {
-        return createTask({ userId: ctx.user.id, title: input.title, description: input.description, dueDate: input.dueDate ? new Date(input.dueDate) : undefined, priority: input.priority, relatedTo: input.relatedTo });
-      }),
-      updateStatus: protectedProcedure.input(z.object({ taskId: z.number(), status: z.enum(["todo", "in_progress", "done", "cancelled"]) })).mutation(async ({ input }) => {
-        await updateTaskStatus(input.taskId, input.status);
-        return { success: true };
-      }),
+      list: protectedProcedure.query(async ({ ctx }) =>
+        getUserTasks(ctx.user.id)
+      ),
+      create: protectedProcedure
+        .input(
+          z.object({
+            title: z.string(),
+            description: z.string().optional(),
+            dueDate: z.string().optional(),
+            priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+            relatedTo: z.string().optional(),
+          })
+        )
+        .mutation(async ({ ctx, input }) => {
+          return createTask({
+            userId: ctx.user.id,
+            title: input.title,
+            description: input.description,
+            dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+            priority: input.priority,
+            relatedTo: input.relatedTo,
+          });
+        }),
+      updateStatus: protectedProcedure
+        .input(
+          z.object({
+            taskId: z.number(),
+            status: z.enum(["todo", "in_progress", "done", "cancelled"]),
+          })
+        )
+        .mutation(async ({ input }) => {
+          await updateTaskStatus(input.taskId, input.status);
+          return { success: true };
+        }),
     }),
   }),
 
   // Friday AI commands
   friday: router({
-    findRecentLeads: protectedProcedure.input(z.object({ days: z.number().default(7) })).query(async ({ input }) => {
-      const daysAgo = new Date();
-      daysAgo.setDate(daysAgo.getDate() - input.days);
-      const query = `after:${daysAgo.toISOString().split("T")[0]}`;
-      return searchGmailThreads({ query, maxResults: 100 });
-    }),
+    findRecentLeads: protectedProcedure
+      .input(z.object({ days: z.number().default(7) }))
+      .query(async ({ input }) => {
+        const daysAgo = new Date();
+        daysAgo.setDate(daysAgo.getDate() - input.days);
+        const query = `after:${daysAgo.toISOString().split("T")[0]}`;
+        return searchGmailThreads({ query, maxResults: 100 });
+      }),
     getCustomers: protectedProcedure.query(async ({ ctx }) => {
       // Return customer profiles from database (created from leads)
       const profiles = await getAllCustomerProfiles(ctx.user.id);
-      console.log('👥 [Router] getCustomers returned', profiles.length, 'customer profiles');
+      console.log(
+        "👥 [Router] getCustomers returned",
+        profiles.length,
+        "customer profiles"
+      );
       return profiles;
     }),
-    searchCustomer: protectedProcedure.input(z.object({ email: z.string() })).query(async ({ input }) => searchCustomerByEmail(input.email)),
+    searchCustomer: protectedProcedure
+      .input(z.object({ email: z.string() }))
+      .query(async ({ input }) => searchCustomerByEmail(input.email)),
   }),
 });
 

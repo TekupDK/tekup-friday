@@ -3,6 +3,7 @@
 ## ✅ COMPLETED FEATURES
 
 ### Database Schema & Models
+
 - [x] Create conversations table (id, userId, title, createdAt, updatedAt)
 - [x] Create messages table (id, conversationId, role, content, attachments, createdAt)
 - [x] Create email_threads table (id, userId, gmailThreadId, subject, participants, lastMessageAt)
@@ -14,10 +15,12 @@
 - [x] Create analytics_events table for tracking
 
 ### Authentication & User Management
+
 - [x] Configure Manus OAuth
 - [x] Set up protected routes for authenticated users
 
 ### AI Router & Multi-Model Integration
+
 - [x] Create AI router service to switch between models (GPT-4o, Claude, Gemini, Manus)
 - [x] Implement Manus Forge API integration with invokeLLM
 - [x] Add model selection logic based on task type
@@ -26,6 +29,7 @@
 - [x] Add model selector UI component (Gemini 2.5 Flash, Claude 3.5 Sonnet, GPT-4o, Manus AI)
 
 ### Chat Interface (Main Panel)
+
 - [x] Build main chat UI with message bubbles
 - [x] Add markdown rendering with syntax highlighting
 - [x] Create file upload component (PDF, CSV, JSON)
@@ -36,6 +40,7 @@
 - [x] Handle voice input errors gracefully
 
 ### Inbox Module (Unified Dashboard)
+
 - [x] Create split-panel layout (60% chat, 40% inbox) inspired by Shortwave.ai
 - [x] Build Email tab with Gmail integration
 - [x] Build Invoices tab for Billy invoices
@@ -46,6 +51,7 @@
 - [x] Add badge counters for each tab
 
 ### Google API Integration (Direct)
+
 - [x] Set up Google Service Account authentication
 - [x] Configure domain-wide delegation for info@rendetalje.dk
 - [x] Implement Gmail API integration (search, read, draft, send)
@@ -55,6 +61,7 @@
 - [x] Test Calendar listing with real calendar (5 events found)
 
 ### Billy API Integration
+
 - [x] Create Billy API client
 - [x] Implement invoice listing
 - [x] Add invoice creation from chat commands
@@ -63,6 +70,7 @@
 - [x] Configure BILLY_API_KEY and BILLY_ORGANIZATION_ID
 
 ### Intent-Based Action System
+
 - [x] Create intent parser that analyzes user messages for 7 action types
 - [x] Implement createLeadAction - directly inserts into database
 - [x] Implement createTaskAction - directly inserts into database
@@ -75,6 +83,7 @@
 - [x] Execute actions BEFORE AI generates response (intent → action → AI context)
 
 ### Friday AI System Prompts & Critical Business Rules
+
 - [x] Implement main system prompt with Friday personality (professional Danish executive assistant)
 - [x] Add 25+ MEMORY rules for critical business operations
 - [x] MEMORY_16: Flytterengøring → Request photos FIRST, block quote sending
@@ -87,6 +96,7 @@
 - [x] MEMORY_25: Verify lead name against actual email
 
 ### Workflow Automation Features
+
 - [x] Implement lead source detection (Rengøring.nu, Rengøring Aarhus, AdHelp)
 - [x] Add photo request workflow for flytterengøring (MEMORY_16)
 - [x] Add duplicate quote prevention (search before sending)
@@ -96,6 +106,7 @@
 - [x] Add email label management (remove INBOX/IMPORTANT after completion)
 
 ### Action Approval System
+
 - [x] Create ActionApprovalModal component with risk levels
 - [x] Modify routeAI() to return pendingAction instead of auto-executing
 - [x] Add chat.executeAction endpoint for approved actions
@@ -106,6 +117,7 @@
 - [x] Support 7 action types with detailed previews
 
 ### Automatic Conversation Title Generation
+
 - [x] Create title-generator.ts with 3-tier fallback system
 - [x] Implement intent-based title generation (Primary)
 - [x] Add domain-specific keyword mapping (Secondary)
@@ -119,6 +131,7 @@
 - [x] Add "afventer billeder" status for flytterengøring (MEMORY_16)
 
 ### UI/UX Enhancements
+
 - [x] Implement dark mode theme
 - [x] Create loading skeletons for all components
 - [x] Add empty states for inbox modules
@@ -136,6 +149,7 @@
 - [x] Add backdrop blur to header
 
 ### Repository Audit (TekupDK/tekup)
+
 - [x] Clone TekupDK/tekup repository
 - [x] Audit tekup-ai folder for reusable code
 - [x] Audit rendetalje folder for business logic
@@ -144,6 +158,7 @@
 - [x] Confirm Friday AI Chat (Manus) is definitive successor
 
 ### Testing Results
+
 - [x] ✅ Test #1: Flytterengøring lead creation → MEMORY_16 working perfectly (photo request triggered)
 - [x] ✅ Test #2: Task creation with Danish date/time parsing → Working (høj prioritet → high)
 - [x] ✅ Test #3: Calendar booking → Intent sent successfully
@@ -151,6 +166,7 @@
 ## 🚧 REMAINING WORK
 
 ### Testing Requirements
+
 - [ ] Test #4: Invoice creation with Billy API (draft-only at 349 kr/hour - MEMORY_17)
 - [ ] Test #5: Gmail search for duplicate detection
 - [ ] Test #6: Job completion 6-step checklist (MEMORY_24)
@@ -160,10 +176,12 @@
 - [ ] Test automatic title generation with real conversations
 
 ### Known Issues to Fix
+
 - [ ] Streaming support for AI responses
 - [ ] Real-time inbox updates (WebSocket/SSE)
 
 ### Future Enhancements
+
 - [ ] Add command palette (⌘K) for power users
 - [ ] Implement chat history search
 - [ ] Add typing indicators
@@ -174,6 +192,7 @@
 ## 🎯 PRODUCTION READINESS
 
 ### Environment Variables Configured
+
 - [x] GOOGLE_SERVICE_ACCOUNT_KEY
 - [x] GOOGLE_IMPERSONATED_USER (info@rendetalje.dk)
 - [x] GOOGLE_CALENDAR_ID (RenOS Booking Calendar - corrected without spaces)
@@ -186,11 +205,13 @@
 - [x] DATABASE_URL
 
 ### Domain-Wide Delegation Setup
+
 - [x] Client ID: 113277186090139582531
 - [x] OAuth Scopes: gmail.readonly, gmail.send, gmail.modify, gmail.compose, calendar, calendar.events
 - [x] Verified working with real Gmail and Calendar data
 
 ### Critical Business Rules Implemented
+
 - [x] 25 MEMORY rules embedded in Friday AI system prompt
 - [x] Intent-based action system for 7 workflow types
 - [x] Danish language support throughout
@@ -200,6 +221,7 @@
 ## 📊 CURRENT STATUS
 
 **Backend:** ✅ 100% Complete
+
 - Database schema: 9 tables operational
 - tRPC API: 30+ endpoints working
 - AI router: Multi-model support (4 models)
@@ -210,6 +232,7 @@
 - Title generation: 3-tier fallback system implemented
 
 **Frontend:** ✅ 98% Complete
+
 - Split-panel UI: Working perfectly
 - Chat interface: Functional with voice input
 - Inbox tabs: All 5 tabs operational (Email, Invoices, Calendar, Leads, Tasks)
@@ -221,12 +244,14 @@
 - Improved animations and styling: Complete
 
 **Integration:** ✅ 95% Complete
+
 - Google Gmail: ✅ Working (5 threads found)
 - Google Calendar: ✅ Working (5 events found, corrected Calendar ID)
 - Billy API: ⚠️ Ready but not tested with real data
 - MCP Framework: ✅ Available for future use
 
 **AI & Workflows:** ✅ 90% Complete
+
 - Friday personality: ✅ Professional Danish executive assistant
 - 25 MEMORY rules: ✅ Implemented
 - 7 intent types: ✅ Working (3/7 tested)
@@ -239,28 +264,31 @@
 
 Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repository, deploy to production.
 
-
 ## 🚨 CRITICAL BUGS TO FIX NOW
 
 ### Chat Scroll Issues
+
 - [x] Fix ScrollArea not scrolling - chat messages cut off
 - [x] Ensure chat container has proper height constraints
 - [x] Add auto-scroll to bottom when new messages arrive
 - [x] Make scroll behavior smooth and natural
 
 ### Inbox Data Loading
+
 - [x] Fix "No emails found" - should load real Gmail data
 - [x] Implement proper data fetching for all inbox tabs
 - [x] Add loading states for inbox modules
 - [x] Handle empty states gracefully
 
 ### Input Field Visibility
+
 - [ ] Ensure input field is always visible at bottom of chat
 - [ ] Fix z-index and positioning issues
 - [ ] Make input sticky to bottom of viewport
 - [ ] Ensure input doesn't get hidden behind other elements
 
 ### Resizable Panels
+
 - [ ] Verify ResizablePanelGroup works correctly
 - [ ] Add visual resize handle between panels
 - [ ] Save panel sizes to localStorage
@@ -269,27 +297,30 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 ## 🎯 MANUS AI SUGGESTIONS
 
 ### Conversation Categorization
+
 - [ ] Automatically categorize conversations by intent type
 - [ ] Add category badges to conversation list
 - [ ] Filter conversations by category (Leads, Tasks, Invoices, etc.)
 - [ ] Color-code categories for quick identification
 
 ### User Feedback Mechanism
+
 - [ ] Add thumbs up/down buttons to AI responses
 - [ ] Store feedback in database (message_feedback table)
 - [ ] Show feedback stats in admin panel
 - [ ] Use feedback to improve AI responses
 
 ### Search Functionality
+
 - [ ] Add search bar for past conversations
 - [ ] Search by conversation title, content, or date
 - [ ] Highlight search results
 - [ ] Add keyboard shortcut (Cmd/Ctrl+K)
 
-
 ## 🎯 MANUS AI SUGGESTIONS - Billy.dk Features
 
 ### Billy Invoice Display (Right Panel)
+
 - [x] Implement Billy.dk invoice fetching using billy-mcp v2.0.0
 - [x] Display invoices in InvoicesTab with proper formatting
 - [x] Show invoice status, amount, customer, date
@@ -297,6 +328,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Add loading states and error handling
 
 ### Search and Filter for Invoices
+
 - [x] Add search input for invoice number, customer name
 - [x] Add filter dropdown for invoice status (draft, approved, sent, paid, overdue)
 - [x] Implement client-side filtering of fetched invoices
@@ -304,6 +336,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Add date range filter (optional enhancement)
 
 ### AI Invoice Analysis
+
 - [x] Add "Analyze Invoice" button for each invoice
 - [x] Send invoice data to AI for analysis
 - [x] Display AI summary of invoice contents
@@ -311,6 +344,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Format AI response in readable markdown
 
 ### Documentation Updates to v2.0.0
+
 - [x] Update BILLY_INTEGRATION.md with v2.0.0 specs
 - [x] Update server/billy.ts header comment
 - [x] Update InvoicesTab.tsx component comment
@@ -318,10 +352,10 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Update version references to 2.0.0
 - [x] Fix branding: "Billy-mcp By Tekup" (not "Tekup-Billy")
 
-
 ## 🎯 NEW MANUS AI SUGGESTIONS - Additional Features
 
 ### CSV Export for AI-Analyzed Invoice Data
+
 - [x] Add "Export to CSV" button in AI analysis dialog
 - [x] Generate CSV with invoice details + AI insights
 - [x] Include columns: Invoice#, Customer, Status, Amount, AI Summary, Recommendations
@@ -329,6 +363,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Format currency and dates properly in CSV
 
 ### User Feedback Mechanism for AI Analysis
+
 - [x] Add thumbs up/down buttons in AI analysis dialog
 - [x] Store feedback in database (rating, invoice_id, analysis_id)
 - [x] Show feedback confirmation message
@@ -336,6 +371,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Optional: Add comment field for detailed feedback (future enhancement)
 
 ### Notification System for New Invoices
+
 - [ ] Integrate with built-in notification API
 - [ ] Detect new invoices (compare with last fetch)
 - [ ] Send notification when new invoice appears
@@ -344,6 +380,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Optional: Email notifications via Gmail API
 
 ### MCP Audit - Fix All Errors
+
 - [x] Use MCP to scan entire codebase
 - [x] Identify TypeScript errors (NONE FOUND!)
 - [x] Identify runtime errors (NONE FOUND!)
@@ -351,10 +388,10 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Identify unused code
 - [x] Fix all identified issues systematically
 
-
 ## 🎯 SHORTWAVE.AI-INSPIRED FEATURES
 
 ### Real-time Auto-refresh
+
 - [ ] Implement WebSocket or polling for emails
 - [ ] Auto-refresh invoices every 30 seconds
 - [ ] Auto-refresh calendar events
@@ -362,6 +399,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Smooth animations for new items
 
 ### Activity Feed
+
 - [ ] Track email "opened" status
 - [ ] Show timestamps for each activity
 - [ ] Display contact avatars
@@ -369,6 +407,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Add "See all emails →" link
 
 ### Contacts Panel
+
 - [ ] Show "CONTACTS IN THIS THREAD" section
 - [ ] Display contact avatars and names
 - [ ] List recent emails from each contact
@@ -376,6 +415,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Clickable email subjects
 
 ### Email Grouping by Time
+
 - [ ] Add "TODAY" section header
 - [ ] Add "YESTERDAY" section header
 - [ ] Add "LAST 7 DAYS" section header
@@ -383,6 +423,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Collapsible sections
 
 ### Status Badges
+
 - [ ] Add "Needs Action" badge (red)
 - [ ] Add "Unsnoozed" badge (red clock icon)
 - [ ] Add "Draft" badge (orange)
@@ -390,6 +431,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Add "Fast..." badge (green)
 
 ### Time-based Calendar View
+
 - [ ] Build hourly grid (7:00, 8:00, 9:00, etc.)
 - [ ] Display events as colored blocks
 - [ ] Show event title and time range
@@ -397,6 +439,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Add current time indicator
 
 ### Conversation History Sidebar
+
 - [ ] Add "Close history" button
 - [ ] List recent conversations with timestamps
 - [ ] Show conversation preview
@@ -404,6 +447,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Scroll to load more
 
 ### Better Email Preview
+
 - [ ] Display full email content
 - [ ] Show email thread history
 - [ ] Add "Reply all" button
@@ -411,6 +455,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Display attachments
 
 ### Manus AI Additional Suggestions
+
 - [ ] Auto-categorize CSV exports by invoice content
 - [ ] Add text input field for detailed feedback comments
 - [ ] Implement user profile section
@@ -420,12 +465,14 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 ## ✅ SHORTWAVE.AI-INSPIRED FEATURES (COMPLETED)
 
 ### Real-time Auto-Refresh
+
 - [x] Email tab auto-refresh every 30 seconds
 - [x] Invoices tab auto-refresh every 30 seconds
 - [x] Calendar tab auto-refresh every 30 seconds
 - [x] Background refresh enabled (refetchIntervalInBackground: true)
 
 ### Email Grouping by Time
+
 - [x] TODAY section with collapsible header
 - [x] YESTERDAY section with collapsible header
 - [x] LAST 7 DAYS section with collapsible header
@@ -433,12 +480,14 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] ChevronDown icon with rotation animation
 
 ### Status Badges
+
 - [x] "Needs Action" badge for unread emails (red)
 - [x] "Draft" badge for draft emails (orange)
 - [x] Attachment badge (📎) for emails with attachments
 - [x] Status badges in invoice list (approved, draft, overdue)
 
 ### Time-Based Calendar View
+
 - [x] Hourly grid view (7:00 - 20:00)
 - [x] Day navigation with prev/next buttons
 - [x] "Today" quick jump button
@@ -448,6 +497,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Event details with time formatting
 
 ### Email Detail View
+
 - [x] Full content display with markdown rendering
 - [x] Action buttons (Back, Reply, Forward, Delete)
 - [x] Complete headers (From, To, Date with full formatting)
@@ -456,6 +506,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Click email card to open detail view
 
 ### Conversation History Sidebar
+
 - [x] Already implemented in ChatPanel
 - [x] New Chat button
 - [x] List of conversations with titles
@@ -463,6 +514,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Active state highlighting
 
 ### Manus AI Suggestions
+
 - [x] Auto-categorization in CSV export (URGENT, PENDING_REVIEW, ATTENTION_NEEDED, HEALTHY, NORMAL)
 - [x] Priority detection (HIGH, MEDIUM, LOW)
 - [x] Text input for detailed feedback comments
@@ -470,6 +522,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Submit or skip option for feedback
 
 ### CSV Export Enhancements
+
 - [x] Category column with auto-categorization
 - [x] Priority column with intelligent detection
 - [x] AI Summary column (200 char limit)
@@ -481,6 +534,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 ## 🔧 MOBILE RESPONSIVENESS & GITHUB DEPLOYMENT
 
 ### Mobile Responsiveness Issues
+
 - [x] Add responsive breakpoints to ChatPanel (hide sidebar on mobile, show hamburger menu)
 - [x] Make InboxPanel responsive (stack tabs vertically on mobile)
 - [x] Add mobile-friendly touch targets (min 44px)
@@ -493,6 +547,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Test landscape and portrait orientations - REQUIRES REAL DEVICE
 
 ### GitHub Repository Setup
+
 - [x] Create TekupDK/tekup-friday repository on GitHub
 - [x] Add repository description and README
 - [x] Configure GitHub remote in local git
@@ -503,6 +558,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Update TekupDK/tekup repo with link to tekup-friday
 
 ### Visual Correctness Verification
+
 - [x] Test Email tab on desktop (grouping, detail view)
 - [x] Test Invoices tab on desktop (search, filter, analyze)
 - [x] Test Calendar tab on desktop (hourly grid, navigation)
@@ -515,10 +571,10 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Check header responsiveness (logo, user info, tabs)
 - [ ] Mobile testing - REQUIRES REAL DEVICE (Android/iOS)
 
-
 ## 🆕 CUSTOMER PROFILE SYSTEM (NEW FEATURE REQUEST)
 
 ### Database Schema Updates
+
 - [x] Add customer_profiles table (id, leadId, billyCustomerId, email, phone, totalInvoiced, totalPaid, balance, aiResume, lastContactDate)
 - [x] Add customer_invoices junction table (customerId, invoiceId, billyInvoiceId, amount, status, dueDate)
 - [x] Add customer_emails junction table (customerId, emailThreadId, gmailThreadId, subject, lastMessageDate)
@@ -526,6 +582,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Schema pushed to database with pnpm db:push
 
 ### Backend Endpoints (tRPC)
+
 - [x] customer.getProfileByLeadId - Get full customer profile by leadId
 - [x] customer.getProfileByEmail - Get profile by email
 - [x] customer.listProfiles - Get all customer profiles
@@ -538,6 +595,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] customer.updateProfile - Update customer profile info
 
 ### Billy Integration
+
 - [x] Sync invoices by customer email (match Billy contactId to lead email)
 - [x] Manual "Opdater" button to force sync from Billy API
 - [x] Store Billy customer ID in customer_profiles table
@@ -547,6 +605,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Auto-sync when new invoice created in Billy (webhook or polling) - FUTURE
 
 ### Gmail Integration
+
 - [x] Search Gmail threads by customer email
 - [x] Group email threads by customer
 - [x] Display email history in customer profile
@@ -554,6 +613,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] searchGmailThreadsByEmail helper function
 
 ### AI Resume Generation
+
 - [x] Analyze all customer interactions (emails, chat, invoices)
 - [x] Generate AI summary with key points:
   - Customer relationship status
@@ -565,6 +625,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Regenerate button for fresh analysis
 
 ### Customer Profile UI
+
 - [x] Create CustomerProfile.tsx component
 - [x] Add "View Profile" button in LeadsTab
 - [x] Implement profile modal/page with tabs:
@@ -578,6 +639,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [x] Show last contact date and interaction count
 
 ### Customer Profile - Overview Tab
+
 - [ ] Customer name, email, phone
 - [ ] AI-generated resume/summary
 - [ ] Key stats cards:
@@ -590,6 +652,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Quick actions (Send email, Create invoice, Start chat)
 
 ### Customer Profile - Invoices Tab
+
 - [ ] List all invoices from Billy
 - [ ] Show invoice number, date, amount, status
 - [ ] Filter by status (paid, unpaid, overdue)
@@ -598,6 +661,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Total summary at top
 
 ### Customer Profile - Emails Tab
+
 - [ ] List all Gmail threads with customer
 - [ ] Show subject, date, snippet
 - [ ] Click to expand full email
@@ -605,12 +669,14 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Link to open in Gmail
 
 ### Customer Profile - Chat Tab
+
 - [ ] Dedicated Friday conversation for this customer
 - [ ] Full chat history specific to customer
 - [ ] Context-aware AI (knows customer history)
 - [ ] Quick actions (Create invoice, Book meeting, etc.)
 
 ### Auto-Sync Implementation
+
 - [ ] Poll Billy API every 5 minutes for new invoices
 - [ ] Match invoices to customers by email
 - [ ] Update customer_invoices table
@@ -618,6 +684,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Show notification when new invoice detected
 
 ### Navigation & Integration
+
 - [ ] Add "Customers" tab in InboxPanel
 - [ ] Click lead in LeadsTab opens customer profile
 - [ ] Click customer in InvoicesTab opens profile
@@ -625,6 +692,7 @@ Next steps: Test remaining 4 workflows, create TekupDK/tekup-friday GitHub repos
 - [ ] Breadcrumb navigation (Inbox > Leads > Jørgen Pagh)
 
 ### Testing
+
 - [ ] Test customer profile with real Billy data
 - [ ] Test email thread grouping
 - [ ] Test AI resume generation

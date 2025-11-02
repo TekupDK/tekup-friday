@@ -2,7 +2,11 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { getLoginUrl } from "@/const";
 import { useState } from "react";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, X } from "lucide-react";
 import ChatPanel from "@/components/ChatPanel";
@@ -16,7 +20,9 @@ import InboxPanel from "@/components/InboxPanel";
  */
 export default function ChatInterface() {
   const { user, loading, isAuthenticated } = useAuth();
-  const [activeInboxTab, setActiveInboxTab] = useState<"email" | "invoices" | "calendar" | "leads" | "tasks">("email");
+  const [activeInboxTab, setActiveInboxTab] = useState<
+    "email" | "invoices" | "calendar" | "leads" | "tasks"
+  >("email");
   const [mobileView, setMobileView] = useState<"chat" | "inbox">("chat");
   const [showMobileInbox, setShowMobileInbox] = useState(false);
 
@@ -57,19 +63,25 @@ export default function ChatInterface() {
             <span className="text-white font-bold text-sm sm:text-base">F</span>
           </div>
           <div>
-            <h1 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Friday</h1>
-            <p className="text-xs text-muted-foreground hidden sm:block">AI Assistant for TekupDK</p>
+            <h1 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Friday
+            </h1>
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              AI Assistant for TekupDK
+            </p>
           </div>
         </div>
-        
+
         {/* Desktop User Info */}
         <div className="hidden md:flex items-center gap-3">
           <div className="text-right">
-            <p className="text-sm font-medium">{user?.name || 'User'}</p>
+            <p className="text-sm font-medium">{user?.name || "User"}</p>
             <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-primary font-semibold text-sm">{user?.name?.charAt(0) || 'U'}</span>
+            <span className="text-primary font-semibold text-sm">
+              {user?.name?.charAt(0) || "U"}
+            </span>
           </div>
         </div>
 
@@ -82,14 +94,19 @@ export default function ChatInterface() {
           </SheetTrigger>
           <SheetContent side="right" className="w-full sm:w-[400px] p-0">
             <div className="h-full">
-              <InboxPanel activeTab={activeInboxTab} onTabChange={setActiveInboxTab} />
+              <InboxPanel
+                activeTab={activeInboxTab}
+                onTabChange={setActiveInboxTab}
+              />
             </div>
           </SheetContent>
         </Sheet>
 
         {/* Mobile User Avatar */}
         <div className="md:hidden w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <span className="text-primary font-semibold text-sm">{user?.name?.charAt(0) || 'U'}</span>
+          <span className="text-primary font-semibold text-sm">
+            {user?.name?.charAt(0) || "U"}
+          </span>
         </div>
       </header>
 
@@ -106,7 +123,10 @@ export default function ChatInterface() {
 
           {/* Inbox Panel (Right - 40%) */}
           <ResizablePanel defaultSize={40} minSize={30}>
-            <InboxPanel activeTab={activeInboxTab} onTabChange={setActiveInboxTab} />
+            <InboxPanel
+              activeTab={activeInboxTab}
+              onTabChange={setActiveInboxTab}
+            />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>

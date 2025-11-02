@@ -13,6 +13,7 @@ This guide provides comprehensive instructions for continuing development of Fri
 Before starting development, ensure you have the following installed on your local machine:
 
 **Required Software:**
+
 - Node.js 22.13.0 or later (LTS recommended)
 - pnpm 9.x or later (package manager)
 - Git 2.x or later
@@ -20,6 +21,7 @@ Before starting development, ensure you have the following installed on your loc
 - Cursor IDE (latest version)
 
 **Optional Tools:**
+
 - GitHub CLI (`gh`) for repository management
 - Drizzle Kit for database migrations
 - Postman or similar for API testing
@@ -88,6 +90,7 @@ VITE_ANALYTICS_ENDPOINT=https://analytics.example.com
 ```
 
 **Important Notes:**
+
 - Never commit `.env` file to version control
 - Use `.env.example` as a template for team members
 - Production environment variables are managed by Manus platform
@@ -101,10 +104,12 @@ pnpm db:push
 ```
 
 This command executes two steps:
+
 1. `drizzle-kit generate` - Generates SQL migration files
 2. `drizzle-kit migrate` - Applies migrations to database
 
 **Expected Output:**
+
 ```
 13 tables
 analytics_events 5 columns 0 indexes 0 fks
@@ -132,6 +137,7 @@ pnpm dev
 The server will start on `http://localhost:3000` with hot-reload enabled.
 
 **Expected Console Output:**
+
 ```
 [11:54:48] > tekup-friday@1.0.0 dev
 [11:54:48] > NODE_ENV=development tsx watch server/_core/index.ts
@@ -197,10 +203,12 @@ tekup-friday/
 **Key Directories:**
 
 **DO NOT EDIT:**
+
 - `client/src/_core/` - Framework-level code managed by Manus
 - `server/_core/` - OAuth, context, and server setup
 
 **EDIT FREELY:**
+
 - `client/src/components/` - UI components
 - `client/src/pages/` - Page-level components
 - `server/*.ts` - Business logic and API endpoints
@@ -220,9 +228,11 @@ Before implementing any feature, add it to `todo.md`:
 ## 🆕 NEW FEATURE NAME
 
 ### Description
+
 Brief description of the feature
 
 ### Tasks
+
 - [ ] Update database schema if needed
 - [ ] Create backend endpoints
 - [ ] Build frontend UI
@@ -266,7 +276,7 @@ Create database helpers in `server/db.ts` or dedicated file:
 export async function createNewRecord(data: InsertNewTable) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const result = await db.insert(newTable).values(data);
   return result;
 }
@@ -274,7 +284,7 @@ export async function createNewRecord(data: InsertNewTable) {
 export async function getNewRecords(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
   return await db.select().from(newTable).where(eq(newTable.userId, userId));
 }
 ```
@@ -285,16 +295,18 @@ Add tRPC procedures in `server/routers.ts`:
 // server/routers.ts
 export const appRouter = router({
   // ... existing routers
-  
+
   newFeature: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       return await getNewRecords(ctx.user.id);
     }),
-    
+
     create: protectedProcedure
-      .input(z.object({
-        name: z.string(),
-      }))
+      .input(
+        z.object({
+          name: z.string(),
+        })
+      )
       .mutation(async ({ ctx, input }) => {
         return await createNewRecord({
           userId: ctx.user.id,
@@ -317,15 +329,15 @@ import { Button } from "@/components/ui/button";
 export default function NewFeature() {
   const { data, isLoading } = trpc.newFeature.list.useQuery();
   const createMutation = trpc.newFeature.create.useMutation();
-  
+
   const handleCreate = async () => {
     await createMutation.mutateAsync({ name: "Test" });
     // Invalidate query to refresh list
     trpc.useUtils().newFeature.list.invalidate();
   };
-  
+
   if (isLoading) return <div>Loading...</div>;
-  
+
   return (
     <div>
       <Button onClick={handleCreate}>Create New</Button>
@@ -372,11 +384,13 @@ pnpm tsc --noEmit
 ```
 
 **Expected Output (no errors):**
+
 ```
 (No output means success)
 ```
 
 **If errors exist:**
+
 ```
 client/src/components/Example.tsx(10,5): error TS2339: Property 'foo' does not exist on type 'Bar'.
 ```
@@ -388,6 +402,7 @@ Fix all errors before proceeding.
 The project uses TypeScript strict mode and follows these conventions:
 
 **Naming Conventions:**
+
 - Files: `kebab-case.tsx` or `PascalCase.tsx` for components
 - Variables: `camelCase`
 - Types/Interfaces: `PascalCase`
@@ -395,6 +410,7 @@ The project uses TypeScript strict mode and follows these conventions:
 - Database columns: `camelCase` (matches TypeScript)
 
 **Import Order:**
+
 1. External libraries (React, tRPC, etc.)
 2. Internal components
 3. UI components (`@/components/ui/*`)
@@ -402,6 +418,7 @@ The project uses TypeScript strict mode and follows these conventions:
 5. Types and constants
 
 **Example:**
+
 ```typescript
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -415,12 +432,14 @@ import type { User } from "@/types";
 This section documents the conventions and a small, incremental improvement plan for `InvoicesTab` to align with the patterns used across Inbox modules (Leads, Calendar).
 
 ### Goals
+
 - Improve scannability and prioritization (color accents, compact stats)
 - Enhance filtering and sorting to handle larger lists efficiently
 - Provide export and quick navigation to customer context
 - Maintain robust logging for debugging and operations
 
 ### Logging Conventions
+
 - Always log a high-level summary when data loads:
   - `[InvoicesTab] Total invoices: <n>`
   - `[InvoicesTab] Invoices with customer names: <m>/<n>`
@@ -429,6 +448,7 @@ This section documents the conventions and a small, incremental improvement plan
   - `[InvoicesTab] Filtered result: <n>`
 
 ### UI Conventions
+
 - Border-left 4px accent on cards based on `state`:
   - `paid`: green, `sent`: blue, `approved`: amber, `draft`: gray, `overdue`: red
 - Compact stats header at the top with key KPIs:
@@ -438,46 +458,55 @@ This section documents the conventions and a small, incremental improvement plan
 - Keep actions visible: Analyze (AI), Export CSV, Open Customer Profile (if resolvable)
 
 ### Small Tasks (Incremental Plan)
-1) Stats summary header
-  - Add cards for: Total, Paid, Sent, Draft, Overdue, Amount Due, Overdue Amount
-  - Acceptance: Stats reflect total dataset by default (can add toggle to show filtered later)
 
-2) Border-left accent by state
-  - 4px left border colored by invoice state for quick scanning
-  - Acceptance: Colors match the palette used elsewhere (Leads/Calendar)
+1. Stats summary header
 
-3) ScrollArea for long lists
-  - Wrap invoice list in `ScrollArea` with responsive height
-  - Acceptance: No layout shift; scroll behaves smoothly on long lists
+- Add cards for: Total, Paid, Sent, Draft, Overdue, Amount Due, Overdue Amount
+- Acceptance: Stats reflect total dataset by default (can add toggle to show filtered later)
 
-4) Sort dropdown
-  - Options: Entry Date (desc default), Amount, Status, Customer Name
-  - Acceptance: Visible active sort; stable ordering changes with selection
+2. Border-left accent by state
 
-5) Amount and date filters
-  - Min/Max amount inputs and a date range picker for Entry Date
-  - Acceptance: Filters compose with search and status; logs reflect active filters
+- 4px left border colored by invoice state for quick scanning
+- Acceptance: Colors match the palette used elsewhere (Leads/Calendar)
 
-6) Export filtered CSV
-  - Export current filtered set (not just individual invoice) to CSV
-  - Acceptance: File contains headers and one row per invoice with key fields
+3. ScrollArea for long lists
 
-7) Link to Customer Profile
-  - Add a button on each invoice row to open customer context (if resolvable)
-  - Strategy: resolve by `customerName`/`contactId` -> profile; fallback: search dialog
-  - Acceptance: Opens profile modal or provides a clear fallback
+- Wrap invoice list in `ScrollArea` with responsive height
+- Acceptance: No layout shift; scroll behaves smoothly on long lists
+
+4. Sort dropdown
+
+- Options: Entry Date (desc default), Amount, Status, Customer Name
+- Acceptance: Visible active sort; stable ordering changes with selection
+
+5. Amount and date filters
+
+- Min/Max amount inputs and a date range picker for Entry Date
+- Acceptance: Filters compose with search and status; logs reflect active filters
+
+6. Export filtered CSV
+
+- Export current filtered set (not just individual invoice) to CSV
+- Acceptance: File contains headers and one row per invoice with key fields
+
+7. Link to Customer Profile
+
+- Add a button on each invoice row to open customer context (if resolvable)
+- Strategy: resolve by `customerName`/`contactId` -> profile; fallback: search dialog
+- Acceptance: Opens profile modal or provides a clear fallback
 
 ### Acceptance Criteria (Global)
+
 - No TypeScript errors; UI behaves responsively
 - Logs are concise and informative; no spam
 - Filters, search, and sorting compose without surprises
 - Exported data matches current list view when applicable
 
 ### Rollout Notes
+
 - Prefer phased PRs (one or two tasks per PR) to minimize conflicts
 - Keep styles consistent with shadcn/ui and existing components
 - Avoid backend changes unless strictly necessary; compute KPIs client-side first
-
 
 ## Database Management
 
@@ -523,19 +552,29 @@ import { users, leads } from "../drizzle/schema";
 async function seed() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // Insert test users
   await db.insert(users).values([
     { openId: "test1", name: "Test User 1", email: "test1@example.com" },
     { openId: "test2", name: "Test User 2", email: "test2@example.com" },
   ]);
-  
+
   // Insert test leads
   await db.insert(leads).values([
-    { userId: 1, source: "website", name: "John Doe", email: "john@example.com" },
-    { userId: 1, source: "referral", name: "Jane Smith", email: "jane@example.com" },
+    {
+      userId: 1,
+      source: "website",
+      name: "John Doe",
+      email: "john@example.com",
+    },
+    {
+      userId: 1,
+      source: "referral",
+      name: "Jane Smith",
+      email: "jane@example.com",
+    },
   ]);
-  
+
   console.log("Database seeded successfully");
 }
 
@@ -553,27 +592,32 @@ tsx scripts/seed.ts
 Use Drizzle ORM for all database operations:
 
 **Select:**
+
 ```typescript
 const users = await db.select().from(usersTable);
 const user = await db.select().from(usersTable).where(eq(usersTable.id, 1));
 ```
 
 **Insert:**
+
 ```typescript
 await db.insert(usersTable).values({ openId: "123", name: "John" });
 ```
 
 **Update:**
+
 ```typescript
 await db.update(usersTable).set({ name: "Jane" }).where(eq(usersTable.id, 1));
 ```
 
 **Delete:**
+
 ```typescript
 await db.delete(usersTable).where(eq(usersTable.id, 1));
 ```
 
 **Joins:**
+
 ```typescript
 const result = await db
   .select()
@@ -615,20 +659,20 @@ export const appRouter = router({
             message: "Either email or phone is required",
           });
         }
-        
+
         // Execute database operation
         const lead = await createLead({
           userId: ctx.user.id,
           ...input,
         });
-        
+
         // Track analytics
         await trackEvent({
           userId: ctx.user.id,
           eventType: "lead_created",
           eventData: { leadId: lead.id },
         });
-        
+
         return lead;
       }),
   }),
@@ -644,7 +688,7 @@ const createLeadMutation = trpc.leads.create.useMutation({
     trpc.useUtils().leads.list.invalidate();
     toast.success("Lead created successfully");
   },
-  onError: (error) => {
+  onError: error => {
     toast.error(error.message);
   },
 });
@@ -701,6 +745,7 @@ throw new TRPCError({
 Follow these patterns for React components:
 
 **Functional Components:**
+
 ```tsx
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -712,11 +757,11 @@ interface Props {
 
 export default function MyComponent({ title, onSubmit }: Props) {
   const [value, setValue] = useState("");
-  
+
   return (
     <div>
       <h2>{title}</h2>
-      <input value={value} onChange={(e) => setValue(e.target.value)} />
+      <input value={value} onChange={e => setValue(e.target.value)} />
       <Button onClick={() => onSubmit(value)}>Submit</Button>
     </div>
   );
@@ -724,6 +769,7 @@ export default function MyComponent({ title, onSubmit }: Props) {
 ```
 
 **tRPC Hooks:**
+
 ```tsx
 // Query (GET)
 const { data, isLoading, error } = trpc.leads.list.useQuery();
@@ -739,24 +785,27 @@ await createMutation.mutateAsync({ name: "John" });
 ```
 
 **Optimistic Updates:**
+
 ```tsx
 const updateMutation = trpc.leads.updateStatus.useMutation({
-  onMutate: async (newData) => {
+  onMutate: async newData => {
     // Cancel outgoing refetches
     await trpc.useUtils().leads.list.cancel();
-    
+
     // Snapshot current value
     const previous = trpc.useUtils().leads.list.getData();
-    
+
     // Optimistically update
-    trpc.useUtils().leads.list.setData(undefined, (old) =>
-      old?.map(lead =>
-        lead.id === newData.leadId
-          ? { ...lead, status: newData.status }
-          : lead
-      )
-    );
-    
+    trpc
+      .useUtils()
+      .leads.list.setData(undefined, old =>
+        old?.map(lead =>
+          lead.id === newData.leadId
+            ? { ...lead, status: newData.status }
+            : lead
+        )
+      );
+
     return { previous };
   },
   onError: (err, newData, context) => {
@@ -775,6 +824,7 @@ const updateMutation = trpc.leads.updateStatus.useMutation({
 Use Tailwind utility classes for styling:
 
 **Responsive Design:**
+
 ```tsx
 <div className="p-4 sm:p-6 md:p-8 lg:p-12">
   {/* Padding increases on larger screens */}
@@ -786,6 +836,7 @@ Use Tailwind utility classes for styling:
 ```
 
 **Dark Mode:**
+
 ```tsx
 <div className="bg-white dark:bg-gray-900 text-black dark:text-white">
   {/* Automatic dark mode support */}
@@ -803,7 +854,7 @@ Edit `client/src/index.css` for global styles:
     --foreground: 222.2 84% 4.9%;
     /* ... other CSS variables */
   }
-  
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -823,8 +874,14 @@ npx shadcn-ui@latest add dialog
 This adds the component to `client/src/components/ui/dialog.tsx`.
 
 **Usage:**
+
 ```tsx
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 <Dialog open={isOpen} onOpenChange={setIsOpen}>
   <DialogContent>
@@ -833,7 +890,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
     </DialogHeader>
     <p>Dialog content here</p>
   </DialogContent>
-</Dialog>
+</Dialog>;
 ```
 
 ## AI Integration
@@ -873,7 +930,7 @@ const newToolSchema = {
 export async function handleNewTool(args: { param1: string; param2?: number }) {
   // Implement tool logic
   const result = await someOperation(args.param1, args.param2);
-  
+
   return {
     success: true,
     data: result,
@@ -919,10 +976,13 @@ export type Intent =
 
 ```typescript
 // server/intent-actions.ts
-export async function executeAction(intent: Intent, userId: number): Promise<ActionResult> {
+export async function executeAction(
+  intent: Intent,
+  userId: number
+): Promise<ActionResult> {
   switch (intent.intent) {
     // ... existing cases
-    
+
     case "new_intent":
       const result = await handleNewIntent(intent.params, userId);
       return {
@@ -930,7 +990,7 @@ export async function executeAction(intent: Intent, userId: number): Promise<Act
         message: "Intent executed successfully",
         data: result,
       };
-    
+
     default:
       return {
         success: false,
@@ -981,6 +1041,7 @@ pnpm add -D vitest @testing-library/react @testing-library/jest-dom
 ```
 
 **Example Test:**
+
 ```typescript
 // client/src/components/__tests__/Button.test.tsx
 import { render, screen } from "@testing-library/react";
@@ -1001,6 +1062,7 @@ pnpm add -D @playwright/test
 ```
 
 **Example Test:**
+
 ```typescript
 // e2e/login.spec.ts
 import { test, expect } from "@playwright/test";
@@ -1017,6 +1079,7 @@ test("user can log in", async ({ page }) => {
 ### Backend Debugging
 
 **Console Logging:**
+
 ```typescript
 console.log("[Debug] User ID:", userId);
 console.error("[Error] Failed to create lead:", error);
@@ -1067,12 +1130,13 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 <QueryClientProvider client={queryClient}>
   <App />
   <ReactQueryDevtools initialIsOpen={false} />
-</QueryClientProvider>
+</QueryClientProvider>;
 ```
 
 **Network Tab:**
 
 Open DevTools → Network tab to inspect tRPC requests:
+
 - Filter by "trpc" to see API calls
 - Check request/response payloads
 - Verify status codes
@@ -1166,16 +1230,19 @@ test: Add unit tests for customer-db helpers
 The project is hosted at https://github.com/TekupDK/tekup-friday
 
 **Clone:**
+
 ```bash
 git clone https://github.com/TekupDK/tekup-friday.git
 ```
 
 **Add Remote:**
+
 ```bash
 git remote add github https://github.com/TekupDK/tekup-friday.git
 ```
 
 **Push:**
+
 ```bash
 git push github main
 ```
@@ -1187,6 +1254,7 @@ git push github main
 **Error:** "Database not available"
 
 **Solution:**
+
 1. Verify `DATABASE_URL` in `.env`
 2. Check database server is running
 3. Test connection with MySQL client:
@@ -1199,6 +1267,7 @@ git push github main
 **Error:** "Property does not exist on type"
 
 **Solution:**
+
 1. Check type definitions in `drizzle/schema.ts`
 2. Regenerate types: `pnpm db:push`
 3. Restart TypeScript server in Cursor: Cmd+Shift+P → "TypeScript: Restart TS Server"
@@ -1208,6 +1277,7 @@ git push github main
 **Error:** "No such procedure"
 
 **Solution:**
+
 1. Verify procedure exists in `server/routers.ts`
 2. Check import in `client/src/lib/trpc.ts`
 3. Restart dev server: `pnpm dev`
@@ -1217,6 +1287,7 @@ git push github main
 **Error:** "Invalid session"
 
 **Solution:**
+
 1. Clear browser cookies
 2. Verify `JWT_SECRET` in `.env`
 3. Check `OAUTH_SERVER_URL` is correct
@@ -1232,6 +1303,7 @@ git push github main
 **Avoid magic numbers:** Use named constants instead of hardcoded values.
 
 **Example:**
+
 ```typescript
 // Bad
 if (score > 80) { ... }
@@ -1250,10 +1322,11 @@ if (score > HIGH_SCORE_THRESHOLD) { ... }
 **Debounce user input:** Prevent excessive API calls.
 
 **Example:**
+
 ```typescript
 import { useDebouncedCallback } from "use-debounce";
 
-const debouncedSearch = useDebouncedCallback((query) => {
+const debouncedSearch = useDebouncedCallback(query => {
   searchMutation.mutate({ query });
 }, 300);
 ```
@@ -1280,17 +1353,20 @@ For Cursor AI assistance, refer to `docs/CURSOR_RULES.md` which contains:
 ## Additional Resources
 
 **Documentation:**
+
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture overview
 - [API_REFERENCE.md](./API_REFERENCE.md) - Complete API documentation
 - [README.md](../README.md) - Project overview
 
 **External Documentation:**
+
 - [tRPC Docs](https://trpc.io/docs)
 - [Drizzle ORM Docs](https://orm.drizzle.team/docs/overview)
 - [Tailwind CSS Docs](https://tailwindcss.com/docs)
 - [shadcn/ui Docs](https://ui.shadcn.com)
 
 **GitHub Repository:**
+
 - https://github.com/TekupDK/tekup-friday
 
 ---

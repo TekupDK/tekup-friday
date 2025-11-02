@@ -9,13 +9,22 @@ import TasksTab from "@/components/inbox/TasksTab";
 
 interface InboxPanelProps {
   activeTab: "email" | "invoices" | "calendar" | "leads" | "tasks";
-  onTabChange: (tab: "email" | "invoices" | "calendar" | "leads" | "tasks") => void;
+  onTabChange: (
+    tab: "email" | "invoices" | "calendar" | "leads" | "tasks"
+  ) => void;
 }
 
-export default function InboxPanel({ activeTab, onTabChange }: InboxPanelProps) {
+export default function InboxPanel({
+  activeTab,
+  onTabChange,
+}: InboxPanelProps) {
   return (
     <div className="h-full flex flex-col bg-muted/30">
-      <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as any)} className="flex-1 flex flex-col">
+      <Tabs
+        value={activeTab}
+        onValueChange={v => onTabChange(v as any)}
+        className="flex-1 flex flex-col"
+      >
         <div className="border-b border-border px-2 sm:px-4">
           <TabsList className="w-full justify-start bg-transparent gap-1">
             <TabsTrigger value="email" className="flex items-center gap-2">

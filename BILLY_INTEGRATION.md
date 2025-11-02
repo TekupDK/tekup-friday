@@ -26,7 +26,9 @@ Billy-mcp By Tekup is a standardized MCP (Model Context Protocol) server that pr
 ## v2.0.0 Features
 
 ### Enhanced Pagination
+
 All list operations now use automatic pagination:
+
 - Fetches all pages automatically (max 100 pages = 100,000 items)
 - Default limit: 20 items per API response
 - Returns pagination metadata with each response
@@ -35,7 +37,7 @@ All list operations now use automatic pagination:
 
 ```
 POST /api/v1/tools/list_invoices
-POST /api/v1/tools/list_customers  
+POST /api/v1/tools/list_customers
 POST /api/v1/tools/list_products
 POST /api/v1/tools/create_invoice
 ```
@@ -63,8 +65,8 @@ POST /api/v1/tools/create_invoice
 The Billy client uses environment variables for authentication:
 
 ```typescript
-BILLY_API_KEY=your_api_key
-BILLY_ORGANIZATION_ID=your_org_id
+BILLY_API_KEY = your_api_key;
+BILLY_ORGANIZATION_ID = your_org_id;
 ```
 
 ### Frontend (`client/src/components/inbox/InvoicesTab.tsx`)

@@ -27,7 +27,12 @@ const replacePlaceholdersPlugin = () => ({
   },
 });
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), replacePlaceholdersPlugin()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  replacePlaceholdersPlugin(),
+];
 
 export default defineConfig({
   plugins,

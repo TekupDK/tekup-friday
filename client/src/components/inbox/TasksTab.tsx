@@ -7,17 +7,27 @@ export default function TasksTab() {
   const { data: tasks, isLoading } = trpc.inbox.tasks.list.useQuery();
 
   if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>;
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Loading tasks...
+      </div>
+    );
   }
 
   return (
     <div className="space-y-2">
       {tasks && tasks.length > 0 ? (
-        tasks.map((task) => (
+        tasks.map(task => (
           <Card key={task.id} className="p-4">
             <div className="flex items-start justify-between mb-2">
               <p className="font-medium">{task.title}</p>
-              <Badge variant={task.priority === "urgent" ? "destructive" : "secondary"}>{task.priority}</Badge>
+              <Badge
+                variant={
+                  task.priority === "urgent" ? "destructive" : "secondary"
+                }
+              >
+                {task.priority}
+              </Badge>
             </div>
             <Badge variant="outline">{task.status}</Badge>
           </Card>

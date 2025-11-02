@@ -331,30 +331,33 @@ Før afsendelse af ETHVERT svar involverende:
 /**
  * Multi-model routing logic
  */
-export function routeToModel(userMessage: string, context: {
-  requiresCalendar?: boolean;
-  requiresMultiStep?: boolean;
-  isEmailDraft?: boolean;
-  isCustomerFacing?: boolean;
-  isSimpleQuery?: boolean;
-  isDataLookup?: boolean;
-}): 'gpt-4o' | 'claude-3.5-sonnet' | 'gemini-pro' {
+export function routeToModel(
+  userMessage: string,
+  context: {
+    requiresCalendar?: boolean;
+    requiresMultiStep?: boolean;
+    isEmailDraft?: boolean;
+    isCustomerFacing?: boolean;
+    isSimpleQuery?: boolean;
+    isDataLookup?: boolean;
+  }
+): "gpt-4o" | "claude-3.5-sonnet" | "gemini-pro" {
   // GPT-4o: Complex reasoning, multi-step workflows, calendar logic
   if (context.requiresCalendar || context.requiresMultiStep) {
-    return 'gpt-4o';
+    return "gpt-4o";
   }
 
   // Claude: Email writing, customer communication, conflict resolution
   if (context.isEmailDraft || context.isCustomerFacing) {
-    return 'claude-3.5-sonnet';
+    return "claude-3.5-sonnet";
   }
 
   // Gemini: Quick lookups, data extraction, simple queries
   if (context.isSimpleQuery || context.isDataLookup) {
-    return 'gemini-pro';
+    return "gemini-pro";
   }
 
-  return 'gpt-4o'; // default
+  return "gpt-4o"; // default
 }
 
 /**

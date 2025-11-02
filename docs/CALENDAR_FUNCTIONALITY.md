@@ -26,18 +26,20 @@ Friday AI's kalender-integration er inspireret af **Shortwave.ai's** tilgang til
 ### Filosofi (Inspireret af Shortwave.ai)
 
 Friday AI følger **Shortwave.ai's design-princip**:
+
 > "Ingen separat kalender-vindue, men dyb integration via AI Assistant"
 
 **Forskelle fra traditionelle kalendere (Outlook/Google Calendar):**
 
-| Traditionel Kalender | Friday AI Kalender |
-|---------------------|-------------------|
+| Traditionel Kalender        | Friday AI Kalender                       |
+| --------------------------- | ---------------------------------------- |
 | Klik-baseret UI for booking | AI-kommandoer ("Book møde fredag kl 14") |
-| Manuel tjek af ledige tider | Automatisk availability check |
-| Separat kalender-app | Integreret i inbox-panel |
-| Drag-drop events | Natural language commands |
+| Manuel tjek af ledige tider | Automatisk availability check            |
+| Separat kalender-app        | Integreret i inbox-panel                 |
+| Drag-drop events            | Natural language commands                |
 
 **Ligheder med Shortwave.ai:**
+
 - 🤖 AI Assistant håndterer booking-logik
 - 📧 Email → Calendar workflow
 - 🔄 Snooze/reminder integration med datoer
@@ -73,11 +75,13 @@ Friday AI følger **Shortwave.ai's design-princip**:
 #### Funktioner
 
 **Date Navigation:**
+
 - Prev/Next day buttons (◀ ▶)
 - "Today" button - hop til i dag
 - Date display i dansk format ("Tir 5. nov")
 
 **Event Display:**
+
 - **Positioning:** Dynamisk beregnet baseret på start/end tid
 - **Height:** Proportionel til event varighed (1 time = 80px)
 - **Color Coding:**
@@ -86,17 +90,20 @@ Friday AI følger **Shortwave.ai's design-princip**:
 - **Hover Effect:** `hover:opacity-90`
 
 **Current Time Indicator:**
+
 - Orange streg med cirkel (`border-orange-500`)
 - Vises kun hvis selectedDate === i dag
 - Opdateres real-time
 
 **Auto-refresh:**
+
 ```typescript
 refetchInterval: 30000, // 30 sekunder
 refetchIntervalInBackground: true
 ```
 
 **Empty State:**
+
 ```
       🗓️
 No events scheduled for this day
@@ -133,18 +140,20 @@ No events scheduled for this day
 
 #### Dialog Felter
 
-| Felt | Ikon | Data | Format |
-|------|------|------|--------|
-| Tidspunkt | 🕐 Clock | start, end | HH:MM - HH:MM |
-| Varighed | - | calculated | X minutter |
-| Lokation | 📍 MapPin | location | Adresse string |
-| Beskrivelse | 👤 User | description | Multi-line text |
+| Felt        | Ikon      | Data        | Format          |
+| ----------- | --------- | ----------- | --------------- |
+| Tidspunkt   | 🕐 Clock  | start, end  | HH:MM - HH:MM   |
+| Varighed    | -         | calculated  | X minutter      |
+| Lokation    | 📍 MapPin | location    | Adresse string  |
+| Beskrivelse | 👤 User   | description | Multi-line text |
 
 **Action Buttons:**
+
 - **Luk** (`variant="outline"`) - Lukker dialog
 - **Rediger** (`variant="default"`) - (Placeholder for fremtidig funktionalitet)
 
 **Dialog State Management:**
+
 ```typescript
 const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
@@ -162,6 +171,7 @@ onOpenChange={(open) => !open && setSelectedEvent(null)}
 ### Service Account Konfiguration
 
 **Authentication Flow:**
+
 ```
 Service Account (google-service-account.json)
     ↓
@@ -173,6 +183,7 @@ Access Calendar (c_39570a852bf141658572fa37bb229c...)
 ```
 
 **Environment Variables:**
+
 ```bash
 GOOGLE_SERVICE_ACCOUNT_KEY='{...}'  # JSON nøgle
 GOOGLE_IMPERSONATED_USER='info@rendetalje.dk'
@@ -180,9 +191,10 @@ GOOGLE_CALENDAR_ID='c_39570a852bf141658572fa37bb229c7246564a6cca47560bc66a4f9e4f
 ```
 
 **OAuth Scopes:**
+
 ```javascript
-'https://www.googleapis.com/auth/calendar',
-'https://www.googleapis.com/auth/calendar.events'
+("https://www.googleapis.com/auth/calendar",
+  "https://www.googleapis.com/auth/calendar.events");
 ```
 
 ---
@@ -194,6 +206,7 @@ GOOGLE_CALENDAR_ID='c_39570a852bf141658572fa37bb229c7246564a6cca47560bc66a4f9e4f
 **Purpose:** Hent kalender events i et tidsinterval
 
 **Parameters:**
+
 ```typescript
 {
   timeMin?: string;    // ISO 8601: "2025-11-01T00:00:00+01:00"
@@ -203,6 +216,7 @@ GOOGLE_CALENDAR_ID='c_39570a852bf141658572fa37bb229c7246564a6cca47560bc66a4f9e4f
 ```
 
 **Return:**
+
 ```typescript
 CalendarEvent[] = [
   {
@@ -217,15 +231,16 @@ CalendarEvent[] = [
 ```
 
 **Google API Call:**
+
 ```javascript
 calendar.events.list({
   calendarId: CALENDAR_ID,
   timeMin: params.timeMin,
   timeMax: params.timeMax,
   maxResults: params.maxResults || 50,
-  singleEvents: true,      // Expand recurring events
-  orderBy: 'startTime',    // Sort by start time
-})
+  singleEvents: true, // Expand recurring events
+  orderBy: "startTime", // Sort by start time
+});
 ```
 
 ---
@@ -235,6 +250,7 @@ calendar.events.list({
 **Purpose:** Opret nyt calendar event (KRITISK: Ingen attendees!)
 
 **Parameters:**
+
 ```typescript
 {
   summary: string;      // "🏠 Fast Rengøring #3 - Mette Nielsen"
@@ -246,6 +262,7 @@ calendar.events.list({
 ```
 
 **⚠️ MEMORY_19 - KRITISK REGEL:**
+
 ```javascript
 // ALDRIG tilføj attendees parameter!
 const event = {
@@ -254,11 +271,11 @@ const event = {
   location: params.location,
   start: {
     dateTime: params.start,
-    timeZone: 'Europe/Copenhagen',
+    timeZone: "Europe/Copenhagen",
   },
   end: {
     dateTime: params.end,
-    timeZone: 'Europe/Copenhagen',
+    timeZone: "Europe/Copenhagen",
   },
   // ❌ INGEN attendees field!
   // Dette forhindrer automatiske Google Calendar invites
@@ -266,6 +283,7 @@ const event = {
 ```
 
 **Hvorfor ingen attendees?**
+
 1. Google Calendar sender automatisk email invites til attendees
 2. Rendetalje.dk håndterer kunderelation manuelt
 3. Forhindrer spam og forvirring hos kunder
@@ -278,14 +296,16 @@ const event = {
 **Purpose:** Tjek om et tidspunkt er ledigt
 
 **Parameters:**
+
 ```typescript
 {
-  start: string;  // ISO 8601
-  end: string;    // ISO 8601
+  start: string; // ISO 8601
+  end: string; // ISO 8601
 }
 ```
 
 **Return:**
+
 ```typescript
 {
   available: boolean;             // true hvis ledigt
@@ -294,11 +314,12 @@ const event = {
 ```
 
 **Logik:**
+
 ```javascript
 const events = await listCalendarEvents({ timeMin: start, timeMax: end });
 return {
   available: events.length === 0,
-  conflictingEvents: events
+  conflictingEvents: events,
 };
 ```
 
@@ -309,15 +330,17 @@ return {
 **Purpose:** Find ledige tidspunkter på en dag
 
 **Parameters:**
+
 ```typescript
 {
-  startDate: string;     // "2025-11-05T00:00:00+01:00"
-  endDate: string;       // "2025-11-05T23:59:59+01:00"
+  startDate: string; // "2025-11-05T00:00:00+01:00"
+  endDate: string; // "2025-11-05T23:59:59+01:00"
   durationHours: number; // 1.5, 2, 2.5, 3 (RUNDE timer)
 }
 ```
 
 **Algorithm:**
+
 ```
 1. Hent alle events i datointervallet
 2. Sorter events efter start tid
@@ -327,11 +350,12 @@ return {
 ```
 
 **Return:**
+
 ```typescript
 [
   { start: "2025-11-05T09:00:00+01:00", end: "2025-11-05T11:00:00+01:00" },
-  { start: "2025-11-05T14:00:00+01:00", end: "2025-11-05T16:00:00+01:00" }
-]
+  { start: "2025-11-05T14:00:00+01:00", end: "2025-11-05T16:00:00+01:00" },
+];
 ```
 
 ---
@@ -347,6 +371,7 @@ Friday AI har **3 dedikerede calendar tools** tilgængelig:
 **Beskrivelse:** "Hent kalender events. Brug dette til at tjekke ledige tider før du foreslår booking."
 
 **Parameters:**
+
 ```javascript
 {
   timeMin: "ISO 8601 format (f.eks. '2025-11-01T00:00:00+01:00')",
@@ -356,6 +381,7 @@ Friday AI har **3 dedikerede calendar tools** tilgængelig:
 ```
 
 **AI Use Cases:**
+
 - ✅ "Hvad har jeg i kalenderen i morgen?"
 - ✅ "Er der ledigt fredag eftermiddag?"
 - ✅ "Vis mine bookings næste uge"
@@ -367,6 +393,7 @@ Friday AI har **3 dedikerede calendar tools** tilgængelig:
 **Beskrivelse:** "Find ledige tider i kalenderen. Brug dette til at foreslå konkrete tider til kunder."
 
 **Parameters:**
+
 ```javascript
 {
   date: "YYYY-MM-DD format",
@@ -379,6 +406,7 @@ Friday AI har **3 dedikerede calendar tools** tilgængelig:
 ```
 
 **AI Use Cases:**
+
 - ✅ "Hvad er ledigt onsdag for en 2-timers rengøring?"
 - ✅ "Find 3-timers slot næste mandag"
 - ✅ "Foreslå tidspunkter til Mette Nielsen (3t job)"
@@ -390,6 +418,7 @@ Friday AI har **3 dedikerede calendar tools** tilgængelig:
 **Beskrivelse:** "Opret kalender event. KRITISK: ALDRIG brug 'attendees' parameter!"
 
 **Parameters:**
+
 ```javascript
 {
   summary: "Event titel (format: '🏠 Fast Rengøring #3 - Mette Nielsen')",
@@ -401,6 +430,7 @@ Friday AI har **3 dedikerede calendar tools** tilgængelig:
 ```
 
 **AI Use Cases:**
+
 - ✅ "Book flytterengøring hos Mette Nielsen fredag kl 10-12"
 - ✅ "Lav booking for Florian Keppeler næste onsdag kl 14"
 - ✅ "Opret event for 3-timers rengøring hos [kunde]"
@@ -412,11 +442,13 @@ Friday AI har **3 dedikerede calendar tools** tilgængelig:
 ### MEMORY_19: Ingen Attendees (Kritisk!)
 
 **Regel:**
+
 > ❌ ALDRIG brug 'attendees' parameter i createCalendarEvent()
-> 
+>
 > Dette forårsager automatiske Google Calendar invitationer til kunder
 
 **Implementation:**
+
 ```javascript
 // ✅ KORREKT
 const event = {
@@ -435,15 +467,17 @@ const event = {
 ```
 
 **Hvorfor denne regel?**
+
 1. **Google sender automatisk invites** hvis attendees er defineret
 2. **Rendetalje.dk sender manuel booking-bekræftelse** via Gmail drafts
 3. **Forhindrer spam** og multiple notifikationer til kunder
 4. **Giver kontrol** over kommunikationen med kunder
 
 **Verificering:**
+
 ```typescript
 // AI verificerer altid efter booking
-message: `✅ **VERIFICERET:** Ingen attendees tilføjet (ingen automatiske invites sendt)`
+message: `✅ **VERIFICERET:** Ingen attendees tilføjet (ingen automatiske invites sendt)`;
 ```
 
 ---
@@ -451,15 +485,18 @@ message: `✅ **VERIFICERET:** Ingen attendees tilføjet (ingen automatiske invi
 ### MEMORY_15: Runde Timer
 
 **Regel:**
+
 > ✅ ALTID brug runde tider: Hele eller halve timer (10:00, 10:30, 11:00)
 
 **Gyldige Tider:**
+
 ```
 ✅ 10:00, 10:30, 11:00, 11:30, 12:00
 ❌ 10:15, 10:45, 11:20, 11:50
 ```
 
 **AI Logik:**
+
 ```javascript
 // Round ned til nærmeste halve time
 const roundedMinute = Math.floor(minute / 30) * 30;
@@ -471,6 +508,7 @@ const roundedMinute = Math.floor(minute / 30) * 30;
 ```
 
 **Hvorfor denne regel?**
+
 1. **Professionel planlægning** - Kunder forventer hele/halve timer
 2. **Buffer tid** - Giver plads til transport mellem jobs
 3. **Kalender æstetik** - Pæn visning i hourly grid
@@ -483,12 +521,14 @@ const roundedMinute = Math.floor(minute / 30) * 30;
 **Special Rules for Flytterengøring:**
 
 1. **2 Medarbejdere Standard:**
+
    ```
    Estimat: 3 timer arbejde
    → Booking: 1.5 timer i kalenderen (3t ÷ 2 medarbejdere)
    ```
 
 2. **Event Format:**
+
    ```
    summary: "🏠 Flytterengøring #12 - Mette Nielsen"
    description: "85m², 2 medarbejdere, 3t estimat\nThread: [THREAD_REF_123]"
@@ -590,16 +630,16 @@ AI: Format response:
 
 ## 🎯 Sammenligning: Friday AI vs Shortwave.ai
 
-| Feature | Shortwave.ai | Friday AI |
-|---------|-------------|-----------|
-| **Calendar UI** | Ingen separat vindue | Hourly grid i Inbox |
-| **Booking Metode** | 100% AI kommandoer | AI + Visual calendar |
-| **Google Integration** | Via AI Assistant | Via Service Account + AI |
-| **Attendees** | ❌ Ingen auto-invites | ❌ Ingen auto-invites (MEMORY_19) |
-| **Date Picker** | Snooze UI ("Friday 2pm") | AI natural language |
-| **Event Display** | Ingen visual | Hourly grid med farver |
-| **Auto-refresh** | ✅ Real-time | ✅ 30s intervals |
-| **Business Rules** | ❌ Generel | ✅ 25 MEMORY rules |
+| Feature                | Shortwave.ai             | Friday AI                         |
+| ---------------------- | ------------------------ | --------------------------------- |
+| **Calendar UI**        | Ingen separat vindue     | Hourly grid i Inbox               |
+| **Booking Metode**     | 100% AI kommandoer       | AI + Visual calendar              |
+| **Google Integration** | Via AI Assistant         | Via Service Account + AI          |
+| **Attendees**          | ❌ Ingen auto-invites    | ❌ Ingen auto-invites (MEMORY_19) |
+| **Date Picker**        | Snooze UI ("Friday 2pm") | AI natural language               |
+| **Event Display**      | Ingen visual             | Hourly grid med farver            |
+| **Auto-refresh**       | ✅ Real-time             | ✅ 30s intervals                  |
+| **Business Rules**     | ❌ Generel               | ✅ 25 MEMORY rules                |
 
 ---
 
@@ -608,6 +648,7 @@ AI: Format response:
 ### For Brugere
 
 **✅ Effektiv AI Booking:**
+
 ```
 Gør dette:
 ✅ "Hvad er ledigt fredag?"
@@ -620,9 +661,10 @@ Undgå dette:
 ```
 
 **✅ Specificer Detaljer:**
+
 ```
 God kommando:
-"Book 3-timers flytterengøring hos Mette Nielsen, 
+"Book 3-timers flytterengøring hos Mette Nielsen,
 Vesterbrogade 12, fredag kl 10"
 
 Mangler detaljer:
@@ -634,43 +676,46 @@ Mangler detaljer:
 ### For Udviklere
 
 **✅ Calendar Event Creation:**
+
 ```typescript
 // KORREKT - Følger alle regler
 await createCalendarEvent({
   summary: "🏠 Flytterengøring #12 - Mette Nielsen",
   description: "85m², 2 medarbejdere, 3t estimat\nThread: [THREAD_123]",
   start: "2025-11-05T10:00:00+01:00", // Round time
-  end: "2025-11-05T12:00:00+01:00",   // Round time
+  end: "2025-11-05T12:00:00+01:00", // Round time
   location: "Vesterbrogade 12, 1620 København V",
   // NO attendees!
 });
 ```
 
 **✅ Availability Check:**
+
 ```typescript
 // ALTID tjek før booking
 const events = await listCalendarEvents({
   timeMin: proposedStart,
-  timeMax: proposedEnd
+  timeMax: proposedEnd,
 });
 
 if (events.length > 0) {
   // Konflikt - find alternativ tid
   const freeSlots = await findFreeSlots({
     date: targetDate,
-    duration: 2
+    duration: 2,
   });
 }
 ```
 
 **✅ Error Handling:**
+
 ```typescript
 try {
   await createCalendarEvent(params);
 } catch (error) {
-  console.error('Calendar API error:', error);
+  console.error("Calendar API error:", error);
   // Fallback: Notify user to book manually
-  return 'Kunne ikke oprette booking. Tjek Google Calendar manuelt.';
+  return "Kunne ikke oprette booking. Tjek Google Calendar manuelt.";
 }
 ```
 
@@ -681,15 +726,18 @@ try {
 ### Google Calendar API Rate Limits
 
 **Quota:**
+
 - 500 queries per 100 seconds per user
 - 1,000,000 queries per day
 
 **Friday AI Mitigation:**
+
 - ✅ Auto-refresh kun hver 30s (i stedet for real-time)
 - ✅ Cache emails i 5 minutter
 - ✅ Batch queries hvor muligt
 
 **Hvad hvis rate limit nås?**
+
 ```typescript
 if (error?.code === 429) {
   // Fallback til cached data
@@ -702,6 +750,7 @@ if (error?.code === 429) {
 ### UI Limitationer
 
 **Ingen Features (endnu):**
+
 - ❌ Drag-drop events
 - ❌ Multi-day view
 - ❌ Week/month view
@@ -709,6 +758,7 @@ if (error?.code === 429) {
 - ❌ Event editing i UI (kun via AI)
 
 **Hvorfor?**
+
 - 🎯 Fokus på AI-first workflow
 - 🎯 Simplicity over features
 - 🎯 Rendetalje.dk behøver ikke avanceret UI
@@ -731,15 +781,16 @@ if (error?.code === 429) {
 **Input:** "Book Mette Nielsen i morgen kl 10"
 
 **AI Flow:**
+
 1. Parse intent: `book_meeting`
 2. Extract: participant="Mette Nielsen", date="i morgen", time="kl 10"
 3. Call `list_calendar_events(tomorrow 00:00-23:59)`
 4. Check availability at 10:00
 5. Call `create_calendar_event({
-     summary: "🏠 Rengøring - Mette Nielsen",
-     start: "2025-11-06T10:00:00+01:00",
-     end: "2025-11-06T12:00:00+01:00"
-   })`
+  summary: "🏠 Rengøring - Mette Nielsen",
+  start: "2025-11-06T10:00:00+01:00",
+  end: "2025-11-06T12:00:00+01:00"
+})`
 6. Return: "✅ Booking oprettet: Mette Nielsen - Rengøring\n📅 Onsdag 6. november 2025\n⏰ 10:00 - 12:00"
 
 ---
@@ -749,15 +800,16 @@ if (error?.code === 429) {
 **Input:** "Hvad er ledigt fredag til en 3-timers rengøring?"
 
 **AI Flow:**
+
 1. Parse: date="fredag", duration=3 timer
 2. Call `find_free_calendar_slots({
-     date: "2025-11-08",
-     duration: 3,
-     workingHours: { start: 8, end: 17 }
-   })`
+  date: "2025-11-08",
+  duration: 3,
+  workingHours: { start: 8, end: 17 }
+})`
 3. Return gaps: [
-     { start: "08:00", end: "11:00" },
-     { start: "13:00", end: "16:00" }
+   { start: "08:00", end: "11:00" },
+   { start: "13:00", end: "16:00" }
    ]
 4. AI formats: "Ledige tider fredag:\n- 08:00-11:00 (3t)\n- 13:00-16:00 (3t)\n\nHvilken tid passer kunden?"
 
@@ -768,6 +820,7 @@ if (error?.code === 429) {
 **Input:** Email fra kunde: "Flytter d. 8/11, lejlighed er 85m²"
 
 **AI Flow:**
+
 1. Detect: flytterengøring intent
 2. Calculate: 85m² = ~3 timers arbejde
 3. Adjust for 2 workers: 3t ÷ 2 = 1.5t booking
@@ -775,11 +828,11 @@ if (error?.code === 429) {
 5. Suggest times to user
 6. User confirms: "Book kl 10"
 7. Call `create_calendar_event({
-     summary: "🏠 Flytterengøring #12 - [Kunde]",
-     description: "85m², 2 medarbejdere, 3t estimat\nThread: [REF]",
-     start: "2025-11-08T10:00:00+01:00",
-     end: "2025-11-08T11:30:00+01:00"
-   })`
+  summary: "🏠 Flytterengøring #12 - [Kunde]",
+  description: "85m², 2 medarbejdere, 3t estimat\nThread: [REF]",
+  start: "2025-11-08T10:00:00+01:00",
+  end: "2025-11-08T11:30:00+01:00"
+})`
 
 ---
 
@@ -791,6 +844,7 @@ Friday AI's kalender-integration kombinerer det bedste fra to verdener:
 2. **Traditional calendar UI** - Visual overview og manuelt override
 
 **Nøgle-takeaways:**
+
 - ✅ AI Assistant håndterer 90% af bookings
 - ✅ Visual calendar til oversight og verification
 - ✅ MEMORY_19 forhindrer spam (ingen auto-invites)
@@ -799,6 +853,7 @@ Friday AI's kalender-integration kombinerer det bedste fra to verdener:
 - ✅ Business rules indbygget i AI prompt
 
 **Fremtidige forbedringer:**
+
 - 🔮 Recurring events support
 - 🔮 Multi-calendar view
 - 🔮 Team calendar (flere medarbejdere)
