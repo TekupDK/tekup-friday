@@ -438,17 +438,25 @@ This section documents the conventions and a small, incremental improvement plan
 - Keep actions visible: Analyze (AI), Export CSV, Open Customer Profile (if resolvable)
 
 ### Small Tasks (Incremental Plan)
-1) Stats summary header
-  - Add cards for: Total, Paid, Sent, Draft, Overdue, Amount Due, Overdue Amount
-  - Acceptance: Stats reflect total dataset by default (can add toggle to show filtered later)
 
-2) Border-left accent by state
+**Phase 1 (Completed):**
+1) ✅ Stats summary header
+  - Added cards for: Total, Paid, Sent, Draft, Overdue, Amount Due, Overdue Amount
+  - Stats reflect total dataset; amounts calculated from invoice lines
+  - Implementation: `client/src/components/inbox/InvoicesTab.tsx`
+
+2) ✅ Border-left accent by state
   - 4px left border colored by invoice state for quick scanning
-  - Acceptance: Colors match the palette used elsewhere (Leads/Calendar)
+  - Colors: paid=green, sent=blue, approved=amber, draft=gray, overdue=red
+  - Helper function: `getStateBorderColor(state)`
+  - Implementation: `client/src/components/inbox/InvoicesTab.tsx`
 
-3) ScrollArea for long lists
-  - Wrap invoice list in `ScrollArea` with responsive height
-  - Acceptance: No layout shift; scroll behaves smoothly on long lists
+3) ✅ ScrollArea for long lists
+  - Wrapped invoice list in `ScrollArea` with responsive height (`h-[calc(100vh-28rem)]`)
+  - No layout shift; smooth scrolling behavior
+  - Implementation: `client/src/components/inbox/InvoicesTab.tsx`
+
+**Phase 2 (Future):**
 
 4) Sort dropdown
   - Options: Entry Date (desc default), Amount, Status, Customer Name

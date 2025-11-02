@@ -5,9 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, Search, Sparkles, X, Download, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Streamdown } from "streamdown";
+
+// Helper function for invoice state border colors
+function getStateBorderColor(state: string): string {
+  switch (state) {
+    case "paid": return "border-l-green-500";
+    case "sent": return "border-l-blue-500";
+    case "approved": return "border-l-amber-500";
+    case "draft": return "border-l-gray-400";
+    case "overdue": return "border-l-red-500";
+    default: return "border-l-gray-300";
+  }
+}
 
 /**
  * InvoicesTab - Displays and manages Billy.dk invoices
@@ -43,6 +56,27 @@ export default function InvoicesTab() {
       console.log('[InvoicesTab] Sample:', invoices.find((i: any) => i.customerName)?.customerName);
     }
   }
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    if (!invoices) return null;
+    const total = invoices.length;
+    const paid = invoices.filter((i: any) => i.state === 'paid').length;
+    const sent = invoices.filter((i: any) => i.state === 'sent').length;
+    const draft = invoices.filter((i: any) => i.state === 'draft').length;
+    const overdue = invoices.filter((i: any) => i.state === 'overdue').length;
+    // Calculate amounts (assuming lines have unitPrice and quantity)
+    const unpaidInvoices = invoices.filter((i: any) => i.state !== 'paid');
+    const amountDue = unpaidInvoices.reduce((sum: number, inv: any) => {
+      const invTotal = inv.lines?.reduce((s: number, line: any) => s + (line.unitPrice || 0) * (line.quantity || 0), 0) || 0;
+      return sum + invTotal;
+    }, 0);
+    const overdueAmount = invoices.filter((i: any) => i.state === 'overdue').reduce((sum: number, inv: any) => {
+      const invTotal = inv.lines?.reduce((s: number, line: any) => s + (line.unitPrice || 0) * (line.quantity || 0), 0) || 0;
+      return sum + invTotal;
+    }, 0);
+    return { total, paid, sent, draft, overdue, amountDue, overdueAmount };
+  }, [invoices]);
 
   // Filter invoices based on search and status
   const filteredInvoices = useMemo(() => {
@@ -231,6 +265,40 @@ Please analyze this invoice and provide:
 
   return (
     <div className="space-y-4">
+      {/* Stats Summary Header */}
+      {stats && (
+        <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Total</div>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Paid</div>
+            <div className="text-2xl font-bold text-green-600">{stats.paid}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Sent</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.sent}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Draft</div>
+            <div className="text-2xl font-bold text-gray-600">{stats.draft}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Overdue</div>
+            <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Amount Due</div>
+            <div className="text-lg font-bold">{formatCurrency(stats.amountDue)}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-xs text-muted-foreground mb-1">Overdue Amt</div>
+            <div className="text-lg font-bold text-red-600">{formatCurrency(stats.overdueAmount)}</div>
+          </Card>
+        </div>
+      )}
+
       {/* Search and Filter Controls */}
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -270,10 +338,11 @@ Please analyze this invoice and provide:
       </div>
 
       {/* Invoice List */}
-      <div className="space-y-2">
-        {filteredInvoices.length > 0 ? (
-          filteredInvoices.map((invoice: any) => (
-            <Card key={invoice.id} className="p-4 hover:bg-accent/50 transition-colors">
+      <ScrollArea className="h-[calc(100vh-28rem)]">
+        <div className="space-y-2 pr-4">
+          {filteredInvoices.length > 0 ? (
+            filteredInvoices.map((invoice: any) => (
+              <Card key={invoice.id} className={`p-4 hover:bg-accent/50 transition-colors border-l-4 ${getStateBorderColor(invoice.state)}`}>
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -327,7 +396,8 @@ Please analyze this invoice and provide:
             </p>
           </div>
         )}
-      </div>
+        </div>
+      </ScrollArea>
 
       {/* AI Analysis Dialog */}
       <Dialog open={!!selectedInvoice} onOpenChange={(open) => !open && setSelectedInvoice(null)}>
