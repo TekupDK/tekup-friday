@@ -312,6 +312,10 @@ MIT License - see [LICENSE](LICENSE) file
 
 This is a private project for Rendetalje.dk. For questions or issues, contact TekupDK.
 
+## 🎓 Learning Resources
+
+- **[OpenAI Prompt Engineering Courses](OPENAI_COURSES.md)** - Free courses from OpenAI to improve your prompting skills
+
 ## 🔗 Related Projects
 
 - **[TekupDK/tekup](https://github.com/TekupDK/tekup)** - Original monorepo (archived)
