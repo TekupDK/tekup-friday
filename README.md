@@ -9,23 +9,43 @@
 
 Friday is a Shortwave.ai-inspired chat interface built specifically for Rendetalje.dk cleaning business operations. It combines AI-powered conversation with real-time inbox management, calendar bookings, invoice handling, and lead tracking.
 
-**No external dependencies** - Runs entirely on your infrastructure with direct OpenAI API integration.
+**No external dependencies** - Runs entirely on your infrastructure with direct AI API integration.
+
+## 🆕 What's New (Recent Updates)
+
+- ✨ **Customer Profile System** - Unified customer view with 4 tabs (Overview, Invoices, Emails, Chat)
+- ✨ **Email Instant Loading** - Database storage with 5-minute browser cache for fast email access
+- ✨ **Action Approval Workflow** - Review and approve AI-triggered actions before execution
+- ✨ **Multi-Model AI** - Choose between Gemini 2.5 Flash, Claude 3.5 Sonnet, GPT-4o per message
+- ✨ **Docker Development Environment** - Complete dev stack with hot reload (MySQL, Redis, Adminer)
+- ✨ **Development Auto-Login** - `/login` endpoint for fast testing without OAuth
+- 🐛 **All TypeScript Errors Fixed** - Clean compilation with zero errors
 
 ## ✨ Features
 
 ### 🤖 AI Chat Interface
-- **OpenAI GPT-4o-mini**: Fast, cost-effective AI responses
+- **Multi-Model AI**: Gemini 2.5 Flash (primary), Claude 3.5 Sonnet, GPT-4o, Manus AI
+- **User Model Selection**: Choose AI model per message
 - **Conversation Memory**: Full chat history context for better responses
+- **Action Approval Workflow**: Review and approve AI-triggered actions with risk levels
 - **Voice Input**: Web Speech API integration (Danish language)
 - **Markdown Rendering**: Rich text formatting with syntax highlighting
 - **File Attachments**: Support for PDF, CSV, JSON uploads
 
 ### 📧 Unified Inbox (Shortwave.ai-inspired)
-- **Email Tab**: Gmail integration with time-based grouping (TODAY, YESTERDAY, LAST 7 DAYS)
+- **Email Tab**: Gmail integration with instant database loading and 5-minute browser cache
 - **Invoices Tab**: Billy.dk invoice management with AI analysis
 - **Calendar Tab**: Google Calendar with hourly grid view (7:00-20:00)
 - **Leads Tab**: Pipeline view (new → qualified → won → lost)
 - **Tasks Tab**: Priority-based task management
+
+### 👤 Customer Profile System (NEW!)
+- **Unified Customer View**: Aggregates all customer data in one place
+- **4-Tab Interface**: Overview, Invoices, Emails, Chat
+- **AI-Generated Summaries**: Danish language customer profile summaries
+- **Balance Tracking**: Automatic calculation from Billy invoices
+- **Email History**: All emails to/from customer with threading
+- **Dedicated Customer Chat**: 1-to-1 conversation per customer
 
 ### 🔄 Intent-Based Actions
 Friday automatically detects and executes 7 types of actions:
@@ -75,20 +95,27 @@ Critical business logic embedded in AI system prompt:
 - **tRPC 11** - Type-safe procedures
 - **Drizzle ORM** - Database management
 - **MySQL/TiDB** - Relational database
+- **Redis** - Caching layer
 
 ### Integrations
-- **OpenAI API** - Direct GPT-4o-mini integration
+- **Google Gemini** - 2.5 Flash (primary AI model)
+- **Anthropic Claude** - 3.5 Sonnet (email drafts, lead analysis)
+- **OpenAI API** - GPT-4o (invoice creation, fallback)
 - **Google API** - Gmail + Calendar (domain-wide delegation)
 - **Billy.dk** - Invoice management API
+- **AWS S3** - File storage and attachments
+- **Manus Platform** - OAuth, LLM proxy, deployment
 
 ## 📦 Installation
 
 ### Prerequisites
 - Docker & Docker Compose (recommended) OR Node.js 22.x + pnpm
 - MySQL/TiDB database (included in Docker Compose or use remote TiDB)
-- OpenAI API key ([get one here](https://platform.openai.com/account/api-keys))
+- Redis (included in Docker Compose, optional for local dev)
+- Google Gemini API key (primary AI model) OR OpenAI/Claude API keys
 - Google Service Account with domain-wide delegation (for Gmail/Calendar)
 - Billy.dk API key (for invoice integration)
+- AWS S3 credentials (optional, for file storage)
 
 ### Quick Start with Docker (Recommended)
 
@@ -115,11 +142,20 @@ docker-compose build
 docker-compose up -d
 ```
 
-4. **Access the app**
+4. **Access the services**
 ```bash
 # App runs on http://localhost:3000
 # Visit http://localhost:3000/login to auto-login in dev mode
+# Database GUI: http://localhost:8080 (Adminer)
+# Redis: localhost:6379
+# MySQL: localhost:3306
 ```
+
+**Docker Services:**
+- `friday-ai` - Main application (port 3000)
+- `db` - MySQL 8.0 database (port 3306)
+- `redis` - Redis cache (port 6379)
+- `adminer` - Database web GUI (port 8080)
 
 ### Local Development (without Docker)
 
@@ -156,35 +192,61 @@ Server runs on `http://localhost:3000`
 
 Friday uses **local session-based authentication** with JWT tokens:
 
-- **Development**: Visit `/login` to auto-login with `OWNER_OPEN_ID`
-- **Production**: Set `ALLOW_DEV_LOGIN=true` in docker-compose to enable `/login` endpoint
-- No external OAuth dependencies - fully self-hosted
-- Session cookies expire after 1 year
+- **Development Mode**: Visit `/login` to auto-login with `OWNER_OPEN_ID` (added in recent commit)
+- **Production**: Set `ALLOW_DEV_LOGIN=true` in environment to enable `/login` endpoint
+- **Manus OAuth**: Full OAuth integration via Manus platform (production)
+- **Session Management**: HTTP-only cookies with 1-year expiration
+- No external OAuth dependencies for development - fully self-hosted
 
 ## 🤖 AI Configuration
 
-Friday uses **OpenAI GPT-4o-mini** directly:
+Friday uses **multi-model AI** with **Gemini 2.5 Flash** as the primary model:
 
-1. Get API key from [OpenAI Platform](https://platform.openai.com/account/api-keys)
-2. Set `OPENAI_API_KEY` in `.env`
-3. Model configured in `server/_core/llm.ts` (currently `gpt-4o-mini`)
-4. Change model by editing `payload.model` in `invokeLLM()` function
+**Available Models:**
+- 🚀 **Gemini 2.5 Flash** (primary) - Fast, cost-effective, good Danish support
+- 🧠 **Claude 3.5 Sonnet** - Email drafts, lead analysis, complex reasoning
+- 💬 **GPT-4o** - Invoice creation, fallback for specialized tasks
+- ⚡ **Manus AI** - Platform-integrated model
+
+**Configuration:**
+1. Set API keys in `.env`: `GEMINI_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY`
+2. Model routing configured in `server/ai-router.ts`
+3. Users can select model per message in UI
+4. Action Approval System validates AI-triggered actions before execution
+
+**Model Selection Strategy:**
+- Chat responses → Gemini 2.5 Flash
+- Email drafts → Claude 3.5 Sonnet
+- Invoice creation → GPT-4o
+- Calendar/data → Gemini 2.5 Flash
 
 ## 🗄️ Database Schema
 
-9 tables for complete business operations:
+14 tables for complete business operations:
 
+**Core System:**
 - **users** - Local authentication with JWT sessions
 - **conversations** - Chat threads
 - **messages** - Chat messages with AI responses
-- **email_threads** - Gmail integration
-- **invoices** - Billy.dk invoices
-- **calendar_events** - Google Calendar events
-- **leads** - Sales pipeline
-- **tasks** - Task management
 - **analytics_events** - User tracking
 
-See `drizzle/schema.ts` for full schema.
+**Email Management:**
+- **email_threads** - Gmail thread metadata
+- **email_messages** - Individual email message storage (NEW)
+
+**Customer Management (NEW):**
+- **customer_profiles** - Aggregated customer data with AI summaries
+- **customer_invoices** - Customer-invoice junction table
+- **customer_emails** - Customer-email relationship mapping
+- **customer_conversations** - Dedicated customer chat threads
+
+**Business Operations:**
+- **invoices** - Billy.dk invoice tracking
+- **calendar_events** - Google Calendar event sync
+- **leads** - Sales pipeline management
+- **tasks** - Task tracking with priority
+
+See `drizzle/schema.ts` for full schema details.
 
 ## 🚀 Deployment
 
@@ -206,15 +268,22 @@ curl http://localhost:3000/
 
 ### Environment Variables for Production
 
-Required:
+**Required:**
 - `DATABASE_URL` - MySQL/TiDB connection string with URL-encoded SSL
-- `OPENAI_API_KEY` - Valid OpenAI API key
 - `JWT_SECRET` - Strong random string for session signing
-- `VITE_APP_ID` - App identifier (default: friday-ai)
 - `OWNER_OPEN_ID` - Admin user identifier
+- `VITE_APP_ID` - App identifier (default: friday-ai)
 - `ALLOW_DEV_LOGIN=true` - Enable /login endpoint in production
 
-Optional (for full features):
+**AI Models (at least one):**
+- `GEMINI_API_KEY` - Google Gemini API key (recommended primary)
+- `OPENAI_API_KEY` - OpenAI API key
+- `ANTHROPIC_API_KEY` - Anthropic Claude API key
+- `BUILT_IN_FORGE_API_KEY` - Manus AI platform key
+
+**Optional (for full features):**
+- `REDIS_URL` - Redis connection string (for caching)
+- `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` - S3 file storage
 - `GOOGLE_SERVICE_ACCOUNT_KEY` - JSON for Gmail/Calendar
 - `GOOGLE_IMPERSONATED_USER` - Email to impersonate
 - `GOOGLE_CALENDAR_ID` - Calendar to use
@@ -229,18 +298,35 @@ tekup-friday/
 ├── client/               # Frontend React app
 │   ├── src/
 │   │   ├── components/  # Reusable UI components
+│   │   │   ├── ChatPanel.tsx           # Chat interface
+│   │   │   ├── InboxPanel.tsx          # Inbox tabs
+│   │   │   ├── CustomerProfile.tsx     # Customer modal (NEW)
+│   │   │   ├── ActionApprovalModal.tsx # Action approval (NEW)
+│   │   │   └── inbox/                  # Inbox tab components
 │   │   ├── pages/       # Route components
 │   │   ├── lib/         # tRPC client
 │   │   └── App.tsx      # Main app
 ├── server/              # Backend Express server
-│   ├── routers.ts       # tRPC procedures
+│   ├── routers.ts       # Main tRPC router (32 endpoints)
 │   ├── db.ts            # Database helpers
-│   ├── ai-router.ts     # AI routing logic
-│   ├── google-api.ts    # Gmail/Calendar
-│   ├── billy.ts         # Billy integration
-│   └── mcp.ts           # MCP framework
-├── drizzle/             # Database schema
-└── shared/              # Shared types
+│   ├── customer-db.ts   # Customer data access (NEW)
+│   ├── customer-router.ts # Customer endpoints (NEW)
+│   ├── ai-router.ts     # AI routing & model selection
+│   ├── google-api.ts    # Gmail/Calendar integration
+│   ├── billy.ts         # Billy API client
+│   ├── billy-sync.ts    # Billy invoice sync (NEW)
+│   └── _core/           # Core server setup
+│       ├── index.ts     # Express server
+│       ├── oauth.ts     # Auth with /login endpoint (NEW)
+│       └── llm.ts       # LLM abstraction
+├── drizzle/             # Database schema (14 tables)
+├── shared/              # Shared types
+├── docs/                # Documentation (NEW)
+│   ├── ARCHITECTURE.md
+│   ├── DEVELOPMENT_GUIDE.md
+│   └── API_REFERENCE.md
+├── Dockerfile.dev       # Dev container (NEW)
+└── docker-compose.yml   # Full stack setup (NEW)
 ```
 
 ### Key Commands
@@ -270,6 +356,26 @@ pnpm build
 ```
 User: "Ny lead fra Rengøring.nu: Hans Jensen, hans@email.dk, 12345678"
 Friday: [Creates lead in database] "Lead oprettet! Skal jeg sende en tilbudsmail?"
+```
+
+### Viewing Customer Profile (NEW!)
+```
+User: Clicks "View Profile" button on lead/email
+Friday: Opens customer profile modal with:
+  - Tab 1 (Overview): AI-generated summary, contact info, balance
+  - Tab 2 (Invoices): All Billy invoices with total balance
+  - Tab 3 (Emails): Email thread history with customer
+  - Tab 4 (Chat): Dedicated 1-to-1 conversation
+```
+
+### Action Approval Workflow (NEW!)
+```
+User: "Send faktura til Hans Jensen"
+Friday: [Shows approval modal] "Review Action: Create Invoice"
+  Risk: Medium | Customer: Hans Jensen | Amount: 1047 kr
+  [Approve] [Reject] [Always approve low-risk actions]
+User: Clicks Approve
+Friday: [Executes action] "Faktura-udkast oprettet i Billy ✓"
 ```
 
 ### Booking Calendar
@@ -307,6 +413,20 @@ Friday: "Jeg skal bruge billeder først (MEMORY_16). Kan du sende fotos af lejli
 ## 📝 License
 
 MIT License - see [LICENSE](LICENSE) file
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the `/docs` folder:
+
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Complete system architecture overview
+- **[DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)** - Developer setup and workflows
+- **[API_REFERENCE.md](docs/API_REFERENCE.md)** - tRPC endpoint documentation
+- **[CURSOR_RULES.md](docs/CURSOR_RULES.md)** - Coding standards and best practices
+
+Additional documentation files:
+- **[DOCKER_SETUP.md](DOCKER_SETUP.md)** - Detailed Docker deployment guide
+- **[STATUS.md](STATUS.md)** - Current project status and testing results
+- **[BILLY_INTEGRATION.md](BILLY_INTEGRATION.md)** - Billy.dk integration details
 
 ## 🤝 Contributing
 
