@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Search, Mail, ChevronDown, X, ArrowLeft, Reply, Forward, Trash2, Download } from "lucide-react";
+import { RefreshCw, Search, Mail, ChevronDown, X, ArrowLeft, Reply, Forward, Trash2, Download, Filter, SortDesc } from "lucide-react";
+import { Select } from "@/components/ui/select";
 import { useState, useMemo, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Streamdown } from "streamdown";
@@ -28,12 +29,18 @@ const CACHE_KEY = 'friday_emails_cache';
 const CACHE_TIMESTAMP_KEY = 'friday_emails_timestamp';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+type FilterType = 'all' | 'unread' | 'starred' | 'attachments';
+type SortType = 'date-desc' | 'date-asc' | 'sender';
+
 export default function EmailTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["TODAY", "YESTERDAY", "LAST_7_DAYS"]));
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [manualRefreshTrigger, setManualRefreshTrigger] = useState(0);
   const [syncStatus, setSyncStatus] = useState<string>('');
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [sort, setSort] = useState<SortType>('date-desc');
+  const [displayLimit, setDisplayLimit] = useState(50); // Initial display limit
   
   // Check if cache is valid
   const isCacheValid = () => {
@@ -171,9 +178,62 @@ export default function EmailTab() {
     });
   }, [displayEmails]);
 
+  // Filter emails by search query, filter type, and sort
+  const filteredAndSortedEmails = useMemo(() => {
+    let result = emailMessages;
+
+    // Apply search filter
+    if (searchQuery && searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((email: EmailMessage) =>
+        email.subject.toLowerCase().includes(query) ||
+        email.from.toLowerCase().includes(query) ||
+        email.to.toLowerCase().includes(query) ||
+        email.snippet.toLowerCase().includes(query) ||
+        email.body.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply label filter
+    if (filter === 'unread') {
+      result = result.filter((email: EmailMessage) => email.unread);
+    } else if (filter === 'starred') {
+      result = result.filter((email: EmailMessage) => email.labels?.includes('STARRED'));
+    } else if (filter === 'attachments') {
+      result = result.filter((email: EmailMessage) => email.hasAttachment);
+    }
+
+    // Apply sort
+    const sorted = [...result];
+    if (sort === 'date-desc') {
+      sorted.sort((a, b) => {
+        const dateA = new Date(a.internalDate || a.date).getTime();
+        const dateB = new Date(b.internalDate || b.date).getTime();
+        return dateB - dateA; // Newest first
+      });
+    } else if (sort === 'date-asc') {
+      sorted.sort((a, b) => {
+        const dateA = new Date(a.internalDate || a.date).getTime();
+        const dateB = new Date(b.internalDate || b.date).getTime();
+        return dateA - dateB; // Oldest first
+      });
+    } else if (sort === 'sender') {
+      sorted.sort((a, b) => a.from.localeCompare(b.from));
+    }
+
+    return sorted;
+  }, [emailMessages, searchQuery, filter, sort]);
+
+  // Apply pagination limit
+  const paginatedEmails = useMemo(() => {
+    return filteredAndSortedEmails.slice(0, displayLimit);
+  }, [filteredAndSortedEmails, displayLimit]);
+
+  const hasMore = filteredAndSortedEmails.length > displayLimit;
+
   // Group emails by time period
   const groupedEmails = useMemo(() => {
-    if (!emailMessages || emailMessages.length === 0) return { TODAY: [], YESTERDAY: [], LAST_7_DAYS: [] };
+    if (!paginatedEmails || paginatedEmails.length === 0) return { TODAY: [], YESTERDAY: [], LAST_7_DAYS: [] };
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -188,7 +248,7 @@ export default function EmailTab() {
       LAST_7_DAYS: [],
     };
 
-    emailMessages.forEach((email: EmailMessage) => {
+    paginatedEmails.forEach((email: EmailMessage) => {
       const emailDate = new Date(email.internalDate ? new Date(email.internalDate) : email.date);
 
       if (emailDate >= today) {
@@ -201,7 +261,7 @@ export default function EmailTab() {
     });
 
     return groups;
-  }, [emailMessages]);
+  }, [paginatedEmails]);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => {
@@ -339,10 +399,10 @@ export default function EmailTab() {
             className="pl-10"
           />
         </div>
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={handleSync} 
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleSync}
           disabled={syncMutation.isPending}
           title="Sync from Gmail"
         >
@@ -351,6 +411,52 @@ export default function EmailTab() {
         <Button variant="outline" size="icon" onClick={handleManualRefresh} disabled={isFetching}>
           <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
         </Button>
+      </div>
+
+      {/* Filter and Sort Controls */}
+      <div className="flex gap-2 items-center">
+        <div className="flex gap-2 flex-1">
+          <Button
+            variant={filter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('all')}
+          >
+            All
+          </Button>
+          <Button
+            variant={filter === 'unread' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('unread')}
+          >
+            Unread
+          </Button>
+          <Button
+            variant={filter === 'starred' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('starred')}
+          >
+            ⭐ Starred
+          </Button>
+          <Button
+            variant={filter === 'attachments' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('attachments')}
+          >
+            📎 Attachments
+          </Button>
+        </div>
+        <div className="flex gap-2 items-center text-sm text-muted-foreground">
+          <SortDesc className="w-4 h-4" />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortType)}
+            className="bg-background border rounded px-2 py-1 text-sm"
+          >
+            <option value="date-desc">Newest first</option>
+            <option value="date-asc">Oldest first</option>
+            <option value="sender">By sender</option>
+          </select>
+        </div>
       </div>
 
       {/* Cache Status */}
@@ -424,6 +530,18 @@ export default function EmailTab() {
           <div className="text-center py-12 text-muted-foreground">
             <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>No emails found</p>
+          </div>
+        )}
+
+        {/* Load More Button */}
+        {hasMore && (
+          <div className="text-center pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDisplayLimit(prev => prev + 50)}
+            >
+              Load More ({filteredAndSortedEmails.length - displayLimit} remaining)
+            </Button>
           </div>
         )}
       </div>
