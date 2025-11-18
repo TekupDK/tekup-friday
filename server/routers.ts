@@ -209,10 +209,10 @@ export const appRouter = router({
               bodyHtml: null,
               snippet: gmailThread.snippet,
               date: new Date(msg.date),
-              labels: [], // TODO: Parse from Gmail API
-              hasAttachment: false, // TODO: Parse from Gmail API
-              isRead: false, // TODO: Parse from Gmail API
-              isStarred: false, // TODO: Parse from Gmail API
+              labels: msg.labels || [], // Parsed from Gmail API
+              hasAttachment: msg.hasAttachment || false, // Parsed from Gmail API
+              isRead: !msg.isUnread, // Inverse of isUnread
+              isStarred: msg.isStarred || false, // Parsed from Gmail API
               internalDate: new Date(msg.date),
             }));
 
@@ -261,6 +261,10 @@ export const appRouter = router({
                 subject: email.subject || '',
                 body: email.bodyText || '',
                 date: email.date.toISOString(),
+                labels: email.labels || [],
+                hasAttachment: email.hasAttachment || false,
+                isUnread: !email.isRead, // Convert isRead to isUnread for frontend
+                isStarred: email.isStarred || false,
               });
             }
 

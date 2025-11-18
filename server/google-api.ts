@@ -74,6 +74,10 @@ export interface GmailMessage {
   subject: string;
   body: string;
   date: string;
+  labels: string[];
+  hasAttachment: boolean;
+  isUnread: boolean;
+  isStarred: boolean;
 }
 
 // ============================================================================
@@ -180,6 +184,18 @@ export async function searchGmailThreads(params: {
             }
           }
 
+          // Extract labels
+          const labels = msg.labelIds || [];
+
+          // Check for attachments
+          const hasAttachment = !!(msg.payload?.parts?.some(part =>
+            part.filename && part.filename.length > 0
+          ));
+
+          // Parse read/starred status from labels
+          const isUnread = labels.includes('UNREAD');
+          const isStarred = labels.includes('STARRED');
+
           messages.push({
             id: msg.id || '',
             threadId: msg.threadId || '',
@@ -188,6 +204,10 @@ export async function searchGmailThreads(params: {
             subject: subjectHeader?.value || '',
             body: body.substring(0, 500), // Limit body length
             date: dateHeader?.value || '',
+            labels,
+            hasAttachment,
+            isUnread,
+            isStarred,
           });
         }
       }
@@ -262,6 +282,14 @@ export async function getGmailThread(threadId: string): Promise<GmailThread | nu
           }
         }
 
+        // Extract metadata
+        const labels = msg.labelIds || [];
+        const hasAttachment = !!(msg.payload?.parts?.some(part =>
+          part.filename && part.filename.length > 0
+        ));
+        const isUnread = labels.includes('UNREAD');
+        const isStarred = labels.includes('STARRED');
+
         messages.push({
           id: msg.id || '',
           threadId: msg.threadId || '',
@@ -270,6 +298,10 @@ export async function getGmailThread(threadId: string): Promise<GmailThread | nu
           subject: subjectHeader?.value || '',
           body,
           date: dateHeader?.value || '',
+          labels,
+          hasAttachment,
+          isUnread,
+          isStarred,
         });
       }
     }

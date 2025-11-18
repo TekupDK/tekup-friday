@@ -163,9 +163,9 @@ export default function EmailTab() {
         internalDate: lastMessage.date ? new Date(lastMessage.date).getTime() : Date.now(),
         body: lastMessage.body || '',
         snippet: thread.snippet || lastMessage.body?.substring(0, 100) || '',
-        unread: false, // Gmail API doesn't provide this in thread format
-        labels: [] as string[], // Gmail API doesn't provide this in thread format
-        hasAttachment: false, // Would need to check payload for attachments
+        unread: lastMessage.isUnread || false, // Parsed from Gmail API
+        labels: lastMessage.labels || [], // Parsed from Gmail API
+        hasAttachment: lastMessage.hasAttachment || false, // Parsed from Gmail API
         sender: lastMessage.from || '', // Alias for from
       }];
     });
