@@ -147,16 +147,57 @@ export const appRouter = router({
       // Sync emails from Gmail to database
       sync: protectedProcedure.mutation(async ({ ctx }) => {
         if (!ctx.user) throw new Error('Not authenticated');
-        
+
         try {
           console.log('[Email Sync] Starting sync...');
-          const gmailThreads = await searchGmailThreads({ query: 'in:inbox', maxResults: 50 });
-          
-          // Transform Gmail threads to database format
-          const emailsToSave = gmailThreads.flatMap(thread => 
-            thread.messages.map(msg => ({
-              userId: ctx.user!.id,
-              threadId: 0, // We'll handle thread linking later
+          // Sync inbox, sent, and important emails
+          const queries = ['in:inbox', 'in:sent', 'is:important'];
+          const allThreads = new Map<string, any>(); // Deduplicate by thread ID
+
+          for (const query of queries) {
+            const threads = await searchGmailThreads({ query, maxResults: 50 });
+            for (const thread of threads) {
+              allThreads.set(thread.id, thread);
+            }
+          }
+
+          const { createEmailThread, getEmailThreadByGmailId, saveEmailMessages } = await import('./db');
+          let syncedEmails = 0;
+
+          // Process each thread
+          for (const gmailThread of Array.from(allThreads.values())) {
+            // 1. Create or get email thread
+            let dbThread = await getEmailThreadByGmailId(ctx.user.id, gmailThread.id);
+
+            if (!dbThread) {
+              // Extract participants from messages
+              const participants = new Set<string>();
+              for (const msg of gmailThread.messages) {
+                if (msg.from) participants.add(msg.from);
+                if (msg.to) participants.add(msg.to);
+              }
+
+              const lastMessage = gmailThread.messages[gmailThread.messages.length - 1];
+
+              dbThread = await createEmailThread({
+                userId: ctx.user.id,
+                gmailThreadId: gmailThread.id,
+                subject: lastMessage?.subject || '(No subject)',
+                participants: Array.from(participants).map(email => ({
+                  name: email.split('<')[0].trim(),
+                  email: email.match(/<(.+)>/)?.[1] || email
+                })),
+                snippet: gmailThread.snippet,
+                labels: [], // Labels are per-message, not per-thread
+                lastMessageAt: lastMessage ? new Date(lastMessage.date) : new Date(),
+                isRead: false, // Will be updated based on messages
+              });
+            }
+
+            // 2. Save all messages in thread
+            const emailsToSave = gmailThread.messages.map((msg: any) => ({
+              userId: ctx.user.id,
+              threadId: dbThread!.id, // Link to database thread
               gmailMessageId: msg.id,
               gmailThreadId: msg.threadId,
               from: msg.from,
@@ -166,22 +207,21 @@ export const appRouter = router({
               subject: msg.subject,
               bodyText: msg.body,
               bodyHtml: null,
-              snippet: thread.snippet,
+              snippet: gmailThread.snippet,
               date: new Date(msg.date),
-              labels: [],
-              hasAttachment: false,
-              isRead: false,
-              isStarred: false,
+              labels: [], // TODO: Parse from Gmail API
+              hasAttachment: false, // TODO: Parse from Gmail API
+              isRead: false, // TODO: Parse from Gmail API
+              isStarred: false, // TODO: Parse from Gmail API
               internalDate: new Date(msg.date),
-            }))
-          );
-          
-          // Save to database
-          const { saveEmailMessages } = await import('./db');
-          await saveEmailMessages(emailsToSave);
-          
-          console.log(`[Email Sync] Synced ${emailsToSave.length} emails`);
-          return { success: true, synced: emailsToSave.length };
+            }));
+
+            await saveEmailMessages(emailsToSave);
+            syncedEmails += emailsToSave.length;
+          }
+
+          console.log(`[Email Sync] Synced ${syncedEmails} emails across ${allThreads.size} threads`);
+          return { success: true, synced: syncedEmails, threads: allThreads.size };
         } catch (error: any) {
           console.error('[Email Sync] Error:', error);
           throw new Error(`Email sync failed: ${error.message}`);
@@ -190,72 +230,50 @@ export const appRouter = router({
       
       list: protectedProcedure.input(z.object({ maxResults: z.number().optional(), query: z.string().optional() })).query(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error('Not authenticated');
-        
-        // INSTANT LOAD: Read from database first
-        const { getUserEmails } = await import('./db');
-        const dbEmails = await getUserEmails(ctx.user.id, input.maxResults || 50);
-        
-        console.log(`[Email List] Loaded ${dbEmails.length} emails from database`);
-        
-        // Transform database emails to Gmail thread format for frontend compatibility
-        if (dbEmails.length > 0) {
-          // Group by threadId
-          const threadMap = new Map<string, any>();
-          
-          for (const email of dbEmails) {
-            if (!threadMap.has(email.gmailThreadId)) {
-              threadMap.set(email.gmailThreadId, {
-                id: email.gmailThreadId,
-                snippet: email.snippet || '',
-                messages: []
+
+        try {
+          // INSTANT LOAD: Read from database first
+          const { getUserEmails } = await import('./db');
+          const dbEmails = await getUserEmails(ctx.user.id, input.maxResults || 50);
+
+          console.log(`[Email List] Loaded ${dbEmails.length} emails from database`);
+
+          // Transform database emails to Gmail thread format for frontend compatibility
+          if (dbEmails.length > 0) {
+            // Group by threadId
+            const threadMap = new Map<string, any>();
+
+            for (const email of dbEmails) {
+              if (!threadMap.has(email.gmailThreadId)) {
+                threadMap.set(email.gmailThreadId, {
+                  id: email.gmailThreadId,
+                  snippet: email.snippet || '',
+                  messages: []
+                });
+              }
+
+              const thread = threadMap.get(email.gmailThreadId);
+              thread.messages.push({
+                id: email.gmailMessageId,
+                threadId: email.gmailThreadId,
+                from: email.from,
+                to: email.to,
+                subject: email.subject || '',
+                body: email.bodyText || '',
+                date: email.date.toISOString(),
               });
             }
-            
-            const thread = threadMap.get(email.gmailThreadId);
-            thread.messages.push({
-              id: email.gmailMessageId,
-              threadId: email.gmailThreadId,
-              from: email.from,
-              to: email.to,
-              subject: email.subject || '',
-              body: email.bodyText || '',
-              date: email.date.toISOString(),
-            });
+
+            return Array.from(threadMap.values());
           }
-          
-          return Array.from(threadMap.values());
+
+          // No emails in database - return empty array (user needs to sync)
+          console.log('[Email List] No emails in database. User should click sync.');
+          return [];
+        } catch (error: any) {
+          console.error('[Email List] Database error:', error);
+          throw new Error(`Failed to load emails: ${error.message}`);
         }
-        
-        // Fallback: If no database emails, return demo data
-        console.log('[Email List] No database emails, returning demo data');
-        return [
-          {
-            id: 'demo-1',
-            snippet: 'Hej, jeg vil gerne have et tilbud på hovedrengøring af mit hus på 120m²...',
-            messages: [{
-              id: 'msg-1',
-              threadId: 'demo-1',
-              from: 'kunde@example.dk',
-              to: 'info@rendetalje.dk',
-              subject: 'Forespørgsel på hovedrengøring',
-              body: 'Hej,\n\nJeg vil gerne have et tilbud på hovedrengøring af mit hus på 120m². Hvornår har I tid?\n\nMed venlig hilsen\nAnders',
-              date: new Date().toISOString(),
-            }]
-          },
-          {
-            id: 'demo-2',
-            snippet: 'Tak for seneste rengøring! Det så fantastisk ud. Jeg vil gerne booke...',
-            messages: [{
-              id: 'msg-2',
-              threadId: 'demo-2',
-              from: 'maria@test.dk',
-              to: 'info@rendetalje.dk',
-              subject: 'Tak og ny booking',
-              body: 'Hej,\n\nTak for seneste rengøring! Det så fantastisk ud. Jeg vil gerne booke fast rengøring hver 14. dag.\n\nVenlig hilsen\nMaria',
-              date: new Date(Date.now() - 3600000).toISOString(),
-            }]
-          }
-        ];
       }),
       get: protectedProcedure.input(z.object({ threadId: z.string() })).query(async ({ input }) => getGmailThread(input.threadId)),
       search: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => searchGmailThreads({ query: input.query, maxResults: 50 })),

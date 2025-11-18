@@ -70,13 +70,23 @@ export default function EmailTab() {
     }
   );
 
-  // Save to cache when emails are fetched
+  // Save to cache when emails are fetched (with race condition protection)
   useEffect(() => {
     if (emails) {
       try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(emails));
-        localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-        setCachedEmails(emails);
+        const now = Date.now();
+        const existingTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+
+        // Only update cache if this data is newer than existing cache
+        // This prevents race conditions when multiple requests are in flight
+        if (!existingTimestamp || now > parseInt(existingTimestamp)) {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(emails));
+          localStorage.setItem(CACHE_TIMESTAMP_KEY, now.toString());
+          setCachedEmails(emails);
+          console.log('[EmailTab] Cache updated:', emails.length, 'threads');
+        } else {
+          console.log('[EmailTab] Skipped cache update (older data)');
+        }
       } catch (e) {
         console.error('[EmailTab] Failed to cache emails:', e);
       }
