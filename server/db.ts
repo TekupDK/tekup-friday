@@ -106,16 +106,16 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 }
 
-export async function getUserByOpenId(openId: string) {
+export async function getUserByOpenId(openId: string): Promise<typeof users.$inferSelect | null> {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
+    console.error("[Database] Cannot get user: database not available");
+    return null;
   }
 
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
 
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? result[0] : null;
 }
 
 // ============= Conversation Functions =============
@@ -204,6 +204,19 @@ export async function getUserEmailThreads(userId: number, limit = 50): Promise<E
     .where(eq(emailThreads.userId, userId))
     .orderBy(desc(emailThreads.lastMessageAt))
     .limit(limit);
+}
+
+export async function getEmailThreadByGmailId(userId: number, gmailThreadId: string): Promise<EmailThread | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select()
+    .from(emailThreads)
+    .where(and(eq(emailThreads.userId, userId), eq(emailThreads.gmailThreadId, gmailThreadId)))
+    .limit(1);
+
+  return result[0];
 }
 
 export async function markEmailThreadRead(id: number, isRead: boolean): Promise<void> {

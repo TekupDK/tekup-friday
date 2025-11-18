@@ -37,6 +37,11 @@ export function registerOAuthRoutes(app: Express) {
         user = await db.getUserByOpenId(ENV.ownerOpenId);
       }
 
+      if (!user) {
+        res.status(500).send("Failed to create or retrieve user");
+        return;
+      }
+
       // Create session token for the owner
       const sessionToken = await sdk.createSessionToken(user.openId, {
         name: user.name || user.email || "Dev User",

@@ -21,7 +21,7 @@ export async function createContext(
     // In development mode without OAuth, use the owner account
     if (!ENV.isProduction && ENV.ownerOpenId) {
       try {
-        user = await db.getUserByOpenId(ENV.ownerOpenId);
+        user = await db.getUserByOpenId(ENV.ownerOpenId) ?? null;
         if (user) {
           console.log("[Dev Mode] Using owner account:", user.name || user.email);
         }
