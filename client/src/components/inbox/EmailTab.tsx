@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Search, Mail, ChevronDown, X, ArrowLeft, Reply, Forward, Trash2, Download } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Streamdown } from "streamdown";
 
@@ -67,18 +67,21 @@ export default function EmailTab() {
       refetchInterval: false, // No automatic refetch - we control it manually
       refetchIntervalInBackground: false,
       retry: false,
-      onSuccess: (data) => {
-        // Save to cache on successful fetch
-        try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-          localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-          setCachedEmails(data);
-        } catch (e) {
-          console.error('[EmailTab] Failed to cache emails:', e);
-        }
-      },
     }
   );
+
+  // Save to cache when emails are fetched
+  useEffect(() => {
+    if (emails) {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(emails));
+        localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+        setCachedEmails(emails);
+      } catch (e) {
+        console.error('[EmailTab] Failed to cache emails:', e);
+      }
+    }
+  }, [emails]);
 
   // Use cached emails if available, otherwise use fresh data
   const displayEmails = cachedEmails || emails;
