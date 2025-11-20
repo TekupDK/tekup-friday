@@ -339,6 +339,169 @@ export const appRouter = router({
       return profiles;
     }),
     searchCustomer: protectedProcedure.input(z.object({ email: z.string() })).query(async ({ input }) => searchCustomerByEmail(input.email)),
+
+    // Email Categories
+    categories: router({
+      list: protectedProcedure.query(async () => {
+        const { getAllCategories } = await import('./email-db');
+        return getAllCategories();
+      }),
+      init: protectedProcedure.mutation(async () => {
+        const { initializeDefaultCategories } = await import('./email-db');
+        return initializeDefaultCategories();
+      }),
+    }),
+
+    // Email Labels
+    labels: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const { getUserLabels } = await import('./email-db');
+        return getUserLabels(ctx.user.id);
+      }),
+      create: protectedProcedure.input(z.object({ name: z.string(), color: z.string(), icon: z.string().optional() })).mutation(async ({ ctx, input }) => {
+        const { createLabel } = await import('./email-db');
+        return createLabel({ userId: ctx.user.id, ...input });
+      }),
+      delete: protectedProcedure.input(z.object({ labelId: z.number() })).mutation(async ({ input }) => {
+        const { deleteLabel } = await import('./email-db');
+        await deleteLabel(input.labelId);
+        return { success: true };
+      }),
+      assignToThread: protectedProcedure.input(z.object({ threadId: z.number(), labelId: z.number() })).mutation(async ({ input }) => {
+        const { assignLabelToThread } = await import('./email-db');
+        await assignLabelToThread(input.threadId, input.labelId);
+        return { success: true };
+      }),
+      removeFromThread: protectedProcedure.input(z.object({ threadId: z.number(), labelId: z.number() })).mutation(async ({ input }) => {
+        const { removeLabelFromThread } = await import('./email-db');
+        await removeLabelFromThread(input.threadId, input.labelId);
+        return { success: true };
+      }),
+    }),
+
+    // Email Rules
+    rules: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const { getUserRules } = await import('./email-db');
+        return getUserRules(ctx.user.id);
+      }),
+      create: protectedProcedure.input(z.object({ name: z.string(), description: z.string().optional(), priority: z.number().optional(), conditions: z.any(), actions: z.any() })).mutation(async ({ ctx, input }) => {
+        const { createRule } = await import('./email-db');
+        return createRule({ userId: ctx.user.id, ...input });
+      }),
+      update: protectedProcedure.input(z.object({ ruleId: z.number(), name: z.string().optional(), description: z.string().optional(), priority: z.number().optional(), conditions: z.any().optional(), actions: z.any().optional(), isEnabled: z.boolean().optional() })).mutation(async ({ input }) => {
+        const { updateRule } = await import('./email-db');
+        const { ruleId, ...data } = input;
+        await updateRule(ruleId, data);
+        return { success: true };
+      }),
+      delete: protectedProcedure.input(z.object({ ruleId: z.number() })).mutation(async ({ input }) => {
+        const { deleteRule } = await import('./email-db');
+        await deleteRule(input.ruleId);
+        return { success: true };
+      }),
+      toggle: protectedProcedure.input(z.object({ ruleId: z.number(), isEnabled: z.boolean() })).mutation(async ({ input }) => {
+        const { toggleRuleEnabled } = await import('./email-db');
+        await toggleRuleEnabled(input.ruleId, input.isEnabled);
+        return { success: true };
+      }),
+      templates: protectedProcedure.query(() => {
+        const { RULE_TEMPLATES } = require('./email-rules-engine');
+        return RULE_TEMPLATES;
+      }),
+    }),
+
+    // User Preferences
+    preferences: router({
+      get: protectedProcedure.query(async ({ ctx }) => {
+        const { getUserPreferences } = await import('./email-db');
+        return getUserPreferences(ctx.user.id);
+      }),
+      update: protectedProcedure.input(z.object({ inboxLayout: z.enum(["gmail_categories", "important_other", "basic"]).optional(), defaultView: z.string().optional(), emailsPerPage: z.number().optional(), theme: z.string().optional(), enableAISummarization: z.boolean().optional(), enableSmartReplies: z.boolean().optional(), enablePriorityScoring: z.boolean().optional(), settings: z.any().optional() })).mutation(async ({ ctx, input }) => {
+        const { updateUserPreferences } = await import('./email-db');
+        await updateUserPreferences(ctx.user.id, input);
+        return { success: true };
+      }),
+    }),
+
+    // Email Templates
+    templates: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const { getUserTemplates } = await import('./email-db');
+        return getUserTemplates(ctx.user.id);
+      }),
+      listByCategory: protectedProcedure.input(z.object({ category: z.string() })).query(async ({ ctx, input }) => {
+        const { getTemplatesByCategory } = await import('./email-db');
+        return getTemplatesByCategory(ctx.user.id, input.category);
+      }),
+      create: protectedProcedure.input(z.object({ name: z.string(), subject: z.string().optional(), body: z.string(), category: z.string().optional(), variables: z.any().optional() })).mutation(async ({ ctx, input }) => {
+        const { createTemplate } = await import('./email-db');
+        return createTemplate({ userId: ctx.user.id, ...input });
+      }),
+      update: protectedProcedure.input(z.object({ templateId: z.number(), name: z.string().optional(), subject: z.string().optional(), body: z.string().optional(), category: z.string().optional(), variables: z.any().optional() })).mutation(async ({ input }) => {
+        const { updateTemplate } = await import('./email-db');
+        const { templateId, ...data } = input;
+        await updateTemplate(templateId, data);
+        return { success: true };
+      }),
+      delete: protectedProcedure.input(z.object({ templateId: z.number() })).mutation(async ({ input }) => {
+        const { deleteTemplate } = await import('./email-db');
+        await deleteTemplate(input.templateId);
+        return { success: true };
+      }),
+    }),
+
+    // Snooze
+    snooze: router({
+      snooze: protectedProcedure.input(z.object({ threadId: z.number(), gmailThreadId: z.string(), snoozeUntil: z.string(), reminder: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
+        const { snoozeEmail } = await import('./email-db');
+        await snoozeEmail({
+          userId: ctx.user.id,
+          threadId: input.threadId,
+          gmailThreadId: input.gmailThreadId,
+          snoozeUntil: new Date(input.snoozeUntil),
+          reminder: input.reminder || false,
+        });
+        return { success: true };
+      }),
+      unsnooze: protectedProcedure.input(z.object({ threadId: z.number() })).mutation(async ({ input }) => {
+        const { unsnoozeEmail } = await import('./email-db');
+        await unsnoozeEmail(input.threadId);
+        return { success: true };
+      }),
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const { getSnoozedEmails } = await import('./email-db');
+        return getSnoozedEmails(ctx.user.id);
+      }),
+    }),
+
+    // AI Analysis
+    ai: router({
+      categorize: protectedProcedure.input(z.object({ from: z.string(), subject: z.string(), body: z.string(), snippet: z.string() })).mutation(async ({ input }) => {
+        const { categorizeEmail } = await import('./email-ai-service');
+        return categorizeEmail(input);
+      }),
+      smartReplies: protectedProcedure.input(z.object({ from: z.string(), subject: z.string(), body: z.string(), context: z.string().optional() })).mutation(async ({ input }) => {
+        const { generateSmartReplies } = await import('./email-ai-service');
+        return generateSmartReplies(input);
+      }),
+      extractActions: protectedProcedure.input(z.object({ body: z.string() })).mutation(async ({ input }) => {
+        const { extractActionItems } = await import('./email-ai-service');
+        return extractActionItems(input.body);
+      }),
+      sentiment: protectedProcedure.input(z.object({ body: z.string() })).mutation(async ({ input }) => {
+        const { analyzeSentiment } = await import('./email-ai-service');
+        return analyzeSentiment(input.body);
+      }),
+      getMetadata: protectedProcedure.input(z.object({ threadId: z.number() })).query(async ({ input }) => {
+        const { getEmailAIMetadata } = await import('./email-db');
+        return getEmailAIMetadata(input.threadId);
+      }),
+      saveMetadata: protectedProcedure.input(z.object({ threadId: z.number(), gmailThreadId: z.string(), summary: z.string().optional(), priorityScore: z.number().optional(), sentiment: z.enum(["positive", "neutral", "negative", "urgent"]).optional(), actionItems: z.any().optional(), keyTopics: z.any().optional(), suggestedReplies: z.any().optional() })).mutation(async ({ input }) => {
+        const { saveEmailAIMetadata } = await import('./email-db');
+        return saveEmailAIMetadata(input);
+      }),
+    }),
   }),
 });
 

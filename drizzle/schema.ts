@@ -280,3 +280,169 @@ export const analyticsEvents = mysqlTable("analytics_events", {
 
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type InsertAnalyticsEvent = typeof analyticsEvents.$inferInsert;
+
+/**
+ * Email categories table - stores AI-powered categorization (Main, Updates, Promotions, Calendar, etc.)
+ */
+export const emailCategories = mysqlTable("email_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 64 }).notNull(), // "Main", "Updates", "Promotions", "Calendar", "Social", "Forums"
+  displayName: varchar("displayName", { length: 64 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 32 }), // hex color code
+  icon: varchar("icon", { length: 64 }), // icon name
+  sortOrder: int("sortOrder").default(0).notNull(),
+  isSystem: boolean("isSystem").default(false).notNull(), // true for built-in categories
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EmailCategory = typeof emailCategories.$inferSelect;
+export type InsertEmailCategory = typeof emailCategories.$inferInsert;
+
+/**
+ * Email labels table - custom labels with colors (like Gmail labels)
+ */
+export const emailLabels = mysqlTable("email_labels", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 64 }).notNull(),
+  color: varchar("color", { length: 32 }).notNull(), // hex color code or predefined color name
+  icon: varchar("icon", { length: 64 }), // optional icon
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EmailLabel = typeof emailLabels.$inferSelect;
+export type InsertEmailLabel = typeof emailLabels.$inferInsert;
+
+/**
+ * Email thread labels junction table - links email threads to custom labels
+ */
+export const emailThreadLabels = mysqlTable("email_thread_labels", {
+  id: int("id").autoincrement().primaryKey(),
+  threadId: int("threadId").notNull(), // FK to emailThreads.id
+  labelId: int("labelId").notNull(), // FK to emailLabels.id
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EmailThreadLabel = typeof emailThreadLabels.$inferSelect;
+export type InsertEmailThreadLabel = typeof emailThreadLabels.$inferInsert;
+
+/**
+ * Email thread categories junction table - links email threads to categories
+ */
+export const emailThreadCategories = mysqlTable("email_thread_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  threadId: int("threadId").notNull(), // FK to emailThreads.id
+  categoryId: int("categoryId").notNull(), // FK to emailCategories.id
+  confidence: int("confidence").default(100).notNull(), // AI confidence score (0-100)
+  isManual: boolean("isManual").default(false).notNull(), // true if manually assigned by user
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EmailThreadCategory = typeof emailThreadCategories.$inferSelect;
+export type InsertEmailThreadCategory = typeof emailThreadCategories.$inferInsert;
+
+/**
+ * Email rules table - automation rules for email processing
+ */
+export const emailRules = mysqlTable("email_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  isEnabled: boolean("isEnabled").default(true).notNull(),
+  priority: int("priority").default(0).notNull(), // higher number = higher priority
+  conditions: json("conditions").$type<{
+    type: 'all' | 'any'; // match all conditions or any condition
+    rules: Array<{
+      field: 'from' | 'to' | 'subject' | 'body' | 'hasAttachment' | 'label';
+      operator: 'contains' | 'equals' | 'startsWith' | 'endsWith' | 'matches';
+      value: string;
+    }>;
+  }>().notNull(),
+  actions: json("actions").$type<Array<{
+    type: 'addLabel' | 'addCategory' | 'markRead' | 'markStarred' | 'archive' | 'delete' | 'forward' | 'snooze';
+    params: Record<string, any>;
+  }>>().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmailRule = typeof emailRules.$inferSelect;
+export type InsertEmailRule = typeof emailRules.$inferInsert;
+
+/**
+ * User preferences table - inbox layout, settings, etc.
+ */
+export const userPreferences = mysqlTable("user_preferences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  inboxLayout: mysqlEnum("inboxLayout", ["gmail_categories", "important_other", "basic"]).default("gmail_categories").notNull(),
+  defaultView: varchar("defaultView", { length: 64 }).default("all"), // "all", "unread", "starred", etc.
+  emailsPerPage: int("emailsPerPage").default(50).notNull(),
+  theme: varchar("theme", { length: 32 }).default("system"), // "light", "dark", "system"
+  enableAISummarization: boolean("enableAISummarization").default(true).notNull(),
+  enableSmartReplies: boolean("enableSmartReplies").default(true).notNull(),
+  enablePriorityScoring: boolean("enablePriorityScoring").default(true).notNull(),
+  settings: json("settings").$type<Record<string, unknown>>(), // flexible field for additional settings
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserPreference = typeof userPreferences.$inferSelect;
+export type InsertUserPreference = typeof userPreferences.$inferInsert;
+
+/**
+ * Snoozed emails table - emails that are temporarily hidden until a specific time
+ */
+export const snoozedEmails = mysqlTable("snoozed_emails", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  threadId: int("threadId").notNull(), // FK to emailThreads.id
+  gmailThreadId: varchar("gmailThreadId", { length: 255 }).notNull(),
+  snoozeUntil: timestamp("snoozeUntil").notNull(),
+  reminder: boolean("reminder").default(false).notNull(), // show notification when unsnoozed
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SnoozedEmail = typeof snoozedEmails.$inferSelect;
+export type InsertSnoozedEmail = typeof snoozedEmails.$inferInsert;
+
+/**
+ * Email templates table - reusable email templates
+ */
+export const emailTemplates = mysqlTable("email_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  subject: text("subject"),
+  body: text("body").notNull(),
+  category: varchar("category", { length: 64 }), // "customer_service", "sales", "follow_up", etc.
+  variables: json("variables").$type<Array<{ name: string; description: string; defaultValue?: string }>>(), // template variables like {name}, {company}
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;
+
+/**
+ * Email AI metadata table - stores AI-generated insights for emails
+ */
+export const emailAIMetadata = mysqlTable("email_ai_metadata", {
+  id: int("id").autoincrement().primaryKey(),
+  threadId: int("threadId").notNull(), // FK to emailThreads.id
+  gmailThreadId: varchar("gmailThreadId", { length: 255 }).notNull(),
+  summary: text("summary"), // AI-generated one-line summary
+  priorityScore: int("priorityScore").default(0).notNull(), // 0-100
+  sentiment: mysqlEnum("sentiment", ["positive", "neutral", "negative", "urgent"]),
+  actionItems: json("actionItems").$type<Array<{ text: string; deadline?: string }>>(), // extracted action items
+  keyTopics: json("keyTopics").$type<string[]>(), // main topics discussed
+  suggestedReplies: json("suggestedReplies").$type<Array<{ text: string; tone: string }>>(), // AI-generated reply suggestions
+  lastAnalyzedAt: timestamp("lastAnalyzedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmailAIMetadata = typeof emailAIMetadata.$inferSelect;
+export type InsertEmailAIMetadata = typeof emailAIMetadata.$inferInsert;
