@@ -9,6 +9,10 @@ import {
   assignCategoryToThread,
   getCategoryByName,
   snoozeEmail,
+  markThreadAsRead,
+  markThreadAsStarred,
+  archiveThread,
+  deleteThread,
 } from "./email-db";
 
 interface EmailData {
@@ -145,17 +149,17 @@ export async function executeRuleActions(
           break;
 
         case 'markRead':
-          // This would update the emailThreads table
+          await markThreadAsRead(email.threadId, true);
           actionsExecuted.push('Marked as read');
           break;
 
         case 'markStarred':
-          // This would update the emailThreads table
+          await markThreadAsStarred(email.threadId, true);
           actionsExecuted.push('Marked as starred');
           break;
 
         case 'archive':
-          // This would hide the email from inbox view
+          await archiveThread(email.threadId, true);
           actionsExecuted.push('Archived');
           break;
 
@@ -174,13 +178,17 @@ export async function executeRuleActions(
 
         case 'forward':
           if (action.params.forwardTo) {
-            // This would forward the email (requires Gmail API integration)
-            actionsExecuted.push(`Forwarded to ${action.params.forwardTo}`);
+            // TODO: Implement Gmail API integration to forward emails
+            // This requires calling Gmail API: gmail.users.messages.send()
+            // with proper formatting of the forwarded message
+            actionsExecuted.push(`Forward to ${action.params.forwardTo} (requires Gmail API)`);
           }
           break;
 
         case 'delete':
-          // This would delete the email (use with caution)
+          await deleteThread(email.threadId);
+          // Note: This is a hard delete. Consider using archive instead for safety.
+          // To sync with Gmail, call: gmail.users.messages.trash() or delete()
           actionsExecuted.push('Deleted');
           break;
 

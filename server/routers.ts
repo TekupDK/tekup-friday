@@ -477,7 +477,15 @@ export const appRouter = router({
 
     // AI Analysis
     ai: router({
-      categorize: protectedProcedure.input(z.object({ from: z.string(), subject: z.string(), body: z.string(), snippet: z.string() })).mutation(async ({ input }) => {
+      categorize: protectedProcedure.input(z.object({
+        from: z.string(),
+        subject: z.string(),
+        body: z.string(),
+        snippet: z.string(),
+        threadId: z.number().optional(),
+        gmailThreadId: z.string().optional(),
+        useCache: z.boolean().optional().default(true),
+      })).mutation(async ({ input }) => {
         const { categorizeEmail } = await import('./email-ai-service');
         return categorizeEmail(input);
       }),

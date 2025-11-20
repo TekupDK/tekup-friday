@@ -4,6 +4,7 @@
  */
 
 import { callLLM } from "./_core/llm";
+import { getEmailAIMetadata, saveEmailAIMetadata } from "./email-db";
 
 export interface EmailCategorizationResult {
   category: 'main' | 'updates' | 'promotions' | 'calendar' | 'social' | 'forums';
@@ -22,14 +23,34 @@ export interface SmartReply {
 }
 
 /**
- * Categorize an email using AI
+ * Categorize an email using AI with caching support
  */
 export async function categorizeEmail(params: {
   from: string;
   subject: string;
   body: string;
   snippet: string;
+  threadId?: number;
+  gmailThreadId?: string;
+  useCache?: boolean;
 }): Promise<EmailCategorizationResult> {
+  // Check cache first if threadId is provided
+  if (params.useCache !== false && params.threadId) {
+    const cached = await getEmailAIMetadata(params.threadId);
+    if (cached && cached.categorization) {
+      console.log(`[Email AI] Cache hit for thread ${params.threadId}`);
+      return {
+        category: cached.categorization.category || 'main',
+        confidence: cached.categorization.confidence || 50,
+        priorityScore: cached.priorityScore || 50,
+        sentiment: cached.sentiment || 'neutral',
+        summary: cached.summary || params.snippet.substring(0, 100),
+        actionItems: cached.actionItems || [],
+        keyTopics: cached.keyTopics || [],
+        suggestedLabels: cached.suggestedLabels || [],
+      };
+    }
+  }
   const prompt = `Analyze this email and provide categorization and insights.
 
 **Email Details:**
@@ -86,7 +107,7 @@ Respond ONLY with valid JSON, no additional text.`;
     const result = JSON.parse(jsonMatch[0]);
 
     // Validate and set defaults
-    return {
+    const categorizationResult = {
       category: result.category || 'main',
       confidence: Math.min(100, Math.max(0, result.confidence || 50)),
       priorityScore: Math.min(100, Math.max(0, result.priorityScore || 50)),
@@ -96,6 +117,27 @@ Respond ONLY with valid JSON, no additional text.`;
       keyTopics: Array.isArray(result.keyTopics) ? result.keyTopics.slice(0, 3) : [],
       suggestedLabels: Array.isArray(result.suggestedLabels) ? result.suggestedLabels : [],
     };
+
+    // Save to cache if threadId is provided
+    if (params.threadId && params.gmailThreadId) {
+      await saveEmailAIMetadata({
+        threadId: params.threadId,
+        gmailThreadId: params.gmailThreadId,
+        categorization: {
+          category: categorizationResult.category,
+          confidence: categorizationResult.confidence,
+        },
+        priorityScore: categorizationResult.priorityScore,
+        sentiment: categorizationResult.sentiment,
+        summary: categorizationResult.summary,
+        actionItems: categorizationResult.actionItems,
+        keyTopics: categorizationResult.keyTopics,
+        suggestedLabels: categorizationResult.suggestedLabels,
+      });
+      console.log(`[Email AI] Cached result for thread ${params.threadId}`);
+    }
+
+    return categorizationResult;
   } catch (error) {
     console.error('[Email AI] Categorization error:', error);
 

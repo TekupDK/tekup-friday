@@ -13,6 +13,7 @@ import {
   snoozedEmails,
   emailTemplates,
   emailAIMetadata,
+  emailThreads,
   type InsertEmailCategory,
   type InsertEmailLabel,
   type InsertEmailThreadLabel,
@@ -345,4 +346,36 @@ export async function getEmailAIMetadataByGmailId(gmailThreadId: string) {
     .limit(1);
 
   return result[0] || null;
+}
+
+// ============================================================================
+// EMAIL THREAD OPERATIONS
+// ============================================================================
+
+/**
+ * Mark an email thread as read or unread
+ */
+export async function markThreadAsRead(threadId: number, isRead: boolean = true) {
+  await db.update(emailThreads).set({ isRead }).where(eq(emailThreads.id, threadId));
+}
+
+/**
+ * Mark an email thread as starred or unstarred
+ */
+export async function markThreadAsStarred(threadId: number, isStarred: boolean = true) {
+  await db.update(emailThreads).set({ isStarred }).where(eq(emailThreads.id, threadId));
+}
+
+/**
+ * Archive an email thread
+ */
+export async function archiveThread(threadId: number, isArchived: boolean = true) {
+  await db.update(emailThreads).set({ isArchived }).where(eq(emailThreads.id, threadId));
+}
+
+/**
+ * Delete an email thread (soft delete by archiving)
+ */
+export async function deleteThread(threadId: number) {
+  await db.delete(emailThreads).where(eq(emailThreads.id, threadId));
 }

@@ -69,6 +69,8 @@ export const emailThreads = mysqlTable("email_threads", {
   labels: json("labels").$type<string[]>(),
   lastMessageAt: timestamp("lastMessageAt"),
   isRead: boolean("isRead").default(false).notNull(),
+  isStarred: boolean("isStarred").default(false).notNull(),
+  isArchived: boolean("isArchived").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
