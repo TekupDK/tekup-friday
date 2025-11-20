@@ -37,7 +37,7 @@ export interface AIRouterOptions {
 
 export interface PendingAction {
   id: string;
-  type: 'create_lead' | 'create_task' | 'book_meeting' | 'create_invoice' | 'search_gmail' | 'request_flytter_photos' | 'job_completion';
+  type: 'create_lead' | 'create_task' | 'book_meeting' | 'create_invoice' | 'search_gmail' | 'request_flytter_photos' | 'job_completion' | 'booking_cancellation' | 'payment_reminder' | 'adhelp_lead' | 'rengoering_nu_lead' | 'leadpoint_lead' | 'fast_rengoering' | 'conflict_resolution' | 'followup_lead';
   params: Record<string, any>;
   impact: string;
   preview: string;
@@ -88,6 +88,14 @@ function getRiskLevel(intentType: string): 'low' | 'medium' | 'high' {
     'search_gmail': 'low',
     'request_flytter_photos': 'low',
     'job_completion': 'medium',
+    'booking_cancellation': 'medium',
+    'payment_reminder': 'low',
+    'adhelp_lead': 'low',
+    'rengoering_nu_lead': 'low',
+    'leadpoint_lead': 'low',
+    'fast_rengoering': 'low',
+    'conflict_resolution': 'high',
+    'followup_lead': 'low',
   };
   return riskMap[intentType] || 'medium';
 }
@@ -99,26 +107,50 @@ function generateActionPreview(intentType: string, params: Record<string, any>):
   switch (intentType) {
     case 'create_lead':
       return `Opret nyt lead:\n- Navn: ${params.name || 'Ikke angivet'}\n- Email: ${params.email || 'Ikke angivet'}\n- Telefon: ${params.phone || 'Ikke angivet'}\n- Kilde: ${params.source || 'Ikke angivet'}`;
-    
+
     case 'create_task':
       return `Opret ny opgave:\n- Titel: ${params.title || 'Ikke angivet'}\n- Prioritet: ${params.priority || 'medium'}\n- Deadline: ${params.dueDate ? new Date(params.dueDate).toLocaleDateString('da-DK') : 'Ikke angivet'}`;
-    
+
     case 'book_meeting':
       return `Book kalenderaftale:\n- Titel: ${params.summary || 'Ikke angivet'}\n- Start: ${params.start ? new Date(params.start).toLocaleString('da-DK') : 'Ikke angivet'}\n- Slut: ${params.end ? new Date(params.end).toLocaleString('da-DK') : 'Ikke angivet'}\n- Sted: ${params.location || 'Ikke angivet'}`;
-    
+
     case 'create_invoice':
       const totalAmount = params.lines?.reduce((sum: number, line: any) => sum + (line.quantity * line.unitPrice), 0) || 0;
       return `Opret faktura:\n- Kunde: ${params.contactId || 'Ikke angivet'}\n- Beløb: ${totalAmount} kr\n- Betalingsfrist: ${params.paymentTermsDays || 14} dage\n- Antal linjer: ${params.lines?.length || 0}`;
-    
+
     case 'search_gmail':
       return `Søg i Gmail:\n- Søgeord: "${params.query || ''}"`;
-    
+
     case 'request_flytter_photos':
       return `Anmod om billeder til flytterengøring:\n- Lead: ${params.leadName || 'Ikke angivet'}\n- Email: ${params.email || 'Ikke angivet'}`;
-    
+
     case 'job_completion':
       return `Afslut job:\n- Job ID: ${params.jobId || 'Ikke angivet'}\n- Kunde: ${params.customerName || 'Ikke angivet'}\n- Gennemfør 6-trins tjekliste`;
-    
+
+    case 'booking_cancellation':
+      return `${params.action === 'cancel' ? 'Aflys' : 'Ændr'} booking:\n- Kunde: ${params.customerName || 'Ikke angivet'}\n- Handling: ${params.action || 'Ikke angivet'}`;
+
+    case 'payment_reminder':
+      return `Send betalingspåmindelse:\n- Kunde: ${params.customerName || 'Ikke angivet'}`;
+
+    case 'adhelp_lead':
+      return `AdHelp Lead:\n- Kunde email: ${params.customerEmail || 'Ikke angivet'}\n- Type: ${params.jobType || 'Ikke angivet'}`;
+
+    case 'rengoering_nu_lead':
+      return `Rengøring.nu Lead:\n- Kunde email: ${params.customerEmail || 'Ikke angivet'}\n- KRITISK: Opret NY email (ALDRIG reply!)`;
+
+    case 'leadpoint_lead':
+      return `Leadpoint Lead (Rengøring Aarhus):\n- Standard workflow kan anvendes`;
+
+    case 'fast_rengoering':
+      return `Fast rengøring tilbud:\n- M²: ${params.squareMeters || 'Ikke angivet'}\n- Frekvens: ${params.frequency || 'Ikke angivet'}`;
+
+    case 'conflict_resolution':
+      return `Håndter konflikt:\n- Kunde: ${params.customerName || 'Ikke angivet'}\n- Problem: ${params.issue?.substring(0, 50) || 'Ikke angivet'}...`;
+
+    case 'followup_lead':
+      return `Opfølgning på lead:\n- Kunde: ${params.customerName || 'Ikke angivet'}`;
+
     default:
       return JSON.stringify(params, null, 2);
   }
@@ -131,25 +163,49 @@ function generateActionImpact(intentType: string, params: Record<string, any>): 
   switch (intentType) {
     case 'create_lead':
       return 'Opretter et nyt lead i databasen. Leadet vil være synligt i Leads-fanen.';
-    
+
     case 'create_task':
       return 'Opretter en ny opgave i databasen. Opgaven vil være synlig i Tasks-fanen.';
-    
+
     case 'book_meeting':
       return 'Opretter en ny kalenderaftale i Google Calendar. Aftalen vil være synlig i Calendar-fanen. BEMÆRK: Der tilføjes IKKE deltagere (MEMORY_19).';
-    
+
     case 'create_invoice':
       return 'Opretter en KLADDE-faktura i Billy.dk. Fakturaen skal godkendes manuelt i Billy før afsendelse (MEMORY_17).';
-    
+
     case 'search_gmail':
       return 'Søger i Gmail for at finde eksisterende emails. Ingen ændringer foretages.';
-    
+
     case 'request_flytter_photos':
       return 'Sender email til kunden med anmodning om billeder af flytterengøring. Dette er KRITISK før tilbudssendelse (MEMORY_16).';
-    
+
     case 'job_completion':
       return 'Gennemfører 6-trins tjekliste for jobafslutning: faktura, team, betaling, tid, kalender, labels (MEMORY_24).';
-    
+
+    case 'booking_cancellation':
+      return 'Håndterer aflysning eller ændring af booking. Tjekker 24-timers regel og foreslår passende svar.';
+
+    case 'payment_reminder':
+      return 'Genererer betalingspåmindelse draft til gennemsyn. SENDER IKKE automatisk.';
+
+    case 'adhelp_lead':
+      return 'Verificerer AdHelp lead og sikrer at tilbud sendes til kundens email (IKKE til mw@/sp@adhelp.dk).';
+
+    case 'rengoering_nu_lead':
+      return 'KRITISK: Verificerer at NY email oprettes til kunde. ALDRIG reply på Rengøring.nu lead-tråd.';
+
+    case 'leadpoint_lead':
+      return 'Standard Leadpoint workflow. Kan svares direkte (normal reply OK).';
+
+    case 'fast_rengoering':
+      return 'Genererer tilbud med SEPARATE priser for første grundig rengøring og efterfølgende vedligeholdelse.';
+
+    case 'conflict_resolution':
+      return 'HØJTRISIKO: Genererer konfliktløsnings-template. Kræver manuel gennemsyn og Jonas notifikation.';
+
+    case 'followup_lead':
+      return 'Genererer opfølgnings-email baseret på timing (dag 7-10, 14-17, eller 21+).';
+
     default:
       return 'Udfører den anmodede handling.';
   }
