@@ -47,6 +47,13 @@ export async function getDb() {
   return _db;
 }
 
+// Synchronous db export for email-db.ts and other services
+// This assumes DATABASE_URL is always available when these services are used
+if (process.env.DATABASE_URL) {
+  _db = drizzle(process.env.DATABASE_URL);
+}
+export const db = _db!;
+
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
