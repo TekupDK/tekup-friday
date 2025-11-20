@@ -1,17 +1,26 @@
-# Friday AI Chat
+# Friday AI Inbox - "Your Next AI Inbox"
 
-**Intelligent AI assistant for Rendetalje.dk** - A production-ready chat interface with unified inbox, OpenAI integration, and business automation.
+**Intelligent AI assistant for Rendetalje.dk** - A production-ready AI inbox with proactive email drafting, unified workspace, OpenAI integration, and business automation.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/TekupDK/tekup-friday/releases)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/TekupDK/tekup-friday/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-Production%20Ready-green.svg)]()
 
 ## 🎯 Overview
 
-Friday is a Shortwave.ai-inspired chat interface built specifically for Rendetalje.dk cleaning business operations. It combines AI-powered conversation with real-time inbox management, calendar bookings, invoice handling, and lead tracking.
+Friday is a **Jace AI + Shortwave.ai-inspired AI inbox** built specifically for Rendetalje.dk cleaning business operations. It combines **proactive email drafting** with real-time inbox management, calendar bookings, invoice handling, and lead tracking.
 
-**No external dependencies** - Runs entirely on your infrastructure with direct OpenAI API integration.
+**Key Innovation:** Unlike Jace AI ($17.50-45.50/month/user), Friday is **self-hosted** with direct OpenAI API integration, saving **$180-852/year** while providing **superior business automation**.
 
 ## ✨ Features
+
+### 🚀 NEW: Proactive Email Drafting (Jace AI-inspired)
+- **24/7 AI Draft Generation**: Automatically drafts responses for incoming emails
+- **Intent Detection**: Recognizes quote_request, complaint, booking, question, etc.
+- **Writing Style Learning**: AI learns your communication tone and phrases
+- **Confidence Scoring**: 0-100 score for each draft quality
+- **Smart Filtering**: Only drafts high-value emails (confidence > 60%)
+- **Multi-Status Tracking**: Pending → Approved → Edited → Sent
 
 ### 🤖 AI Chat Interface
 - **OpenAI GPT-4o-mini**: Fast, cost-effective AI responses

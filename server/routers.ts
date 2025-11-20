@@ -282,6 +282,83 @@ export const appRouter = router({
       get: protectedProcedure.input(z.object({ threadId: z.string() })).query(async ({ input }) => getGmailThread(input.threadId)),
       search: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => searchGmailThreads({ query: input.query, maxResults: 50 })),
       createDraft: protectedProcedure.input(z.object({ to: z.string(), subject: z.string(), body: z.string(), cc: z.string().optional(), bcc: z.string().optional() })).mutation(async ({ input }) => createGmailDraft(input)),
+
+      // AI Draft System (Jace AI-inspired)
+      generateDraft: protectedProcedure.input(z.object({
+        gmailThreadId: z.string(),
+        gmailMessageId: z.string(),
+        email: z.object({
+          from: z.string(),
+          subject: z.string(),
+          body: z.string(),
+        })
+      })).mutation(async ({ ctx, input }) => {
+        const { detectEmailIntent, generateDraftResponse, saveDraft } = await import('./email-drafts');
+
+        // Detect intent
+        const intentResult = await detectEmailIntent(input.email);
+
+        if (!intentResult.shouldDraft) {
+          return { success: false, message: 'No draft needed for this email type' };
+        }
+
+        // Generate draft
+        const draft = await generateDraftResponse({
+          userId: ctx.user.id,
+          gmailThreadId: input.gmailThreadId,
+          gmailMessageId: input.gmailMessageId,
+          email: input.email,
+          intent: intentResult.intent,
+        });
+
+        // Save draft
+        const saved = await saveDraft({
+          userId: ctx.user.id,
+          gmailThreadId: input.gmailThreadId,
+          gmailMessageId: input.gmailMessageId,
+          draftSubject: `Re: ${input.email.subject}`,
+          draftBody: draft.draftBody,
+          confidence: draft.confidence,
+          intent: intentResult.intent,
+        });
+
+        return { success: true, draft: saved };
+      }),
+
+      listDrafts: protectedProcedure.input(z.object({
+        status: z.enum(['pending', 'approved', 'edited', 'rejected', 'sent']).optional()
+      })).query(async ({ ctx, input }) => {
+        const { getUserDrafts } = await import('./email-drafts');
+        return getUserDrafts(ctx.user.id, input.status);
+      }),
+
+      getDraftForThread: protectedProcedure.input(z.object({
+        gmailThreadId: z.string()
+      })).query(async ({ ctx, input }) => {
+        const { getDraftForThread } = await import('./email-drafts');
+        return getDraftForThread(ctx.user.id, input.gmailThreadId);
+      }),
+
+      updateDraftStatus: protectedProcedure.input(z.object({
+        draftId: z.number(),
+        status: z.enum(['approved', 'edited', 'rejected', 'sent'])
+      })).mutation(async ({ input }) => {
+        const { updateDraftStatus } = await import('./email-drafts');
+        return updateDraftStatus(input.draftId, input.status);
+      }),
+
+      updateDraftContent: protectedProcedure.input(z.object({
+        draftId: z.number(),
+        newBody: z.string()
+      })).mutation(async ({ input }) => {
+        const { updateDraftContent } = await import('./email-drafts');
+        return updateDraftContent(input.draftId, input.newBody);
+      }),
+
+      processNewDrafts: protectedProcedure.mutation(async ({ ctx }) => {
+        const { processNewEmailsForDrafts } = await import('./email-drafts');
+        return processNewEmailsForDrafts(ctx.user.id);
+      }),
     }),
     invoices: router({
       list: protectedProcedure.query(async () => {

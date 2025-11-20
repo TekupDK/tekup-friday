@@ -280,3 +280,47 @@ export const analyticsEvents = mysqlTable("analytics_events", {
 
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type InsertAnalyticsEvent = typeof analyticsEvents.$inferInsert;
+
+/**
+ * Email drafts table - stores AI-generated draft responses
+ */
+export const emailDrafts = mysqlTable("email_drafts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  gmailThreadId: varchar("gmailThreadId", { length: 255 }).notNull(),
+  gmailMessageId: varchar("gmailMessageId", { length: 255 }), // The message being replied to
+  draftSubject: text("draftSubject"),
+  draftBody: text("draftBody").notNull(),
+  draftHtml: text("draftHtml"), // HTML version if applicable
+  confidence: int("confidence").notNull().default(0), // 0-100 AI confidence score
+  intent: varchar("intent", { length: 64 }), // e.g., "quote_request", "complaint", "booking"
+  status: mysqlEnum("status", ["pending", "approved", "edited", "rejected", "sent"]).default("pending").notNull(),
+  metadata: json("metadata").$type<Record<string, unknown>>(), // Additional context
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmailDraft = typeof emailDrafts.$inferSelect;
+export type InsertEmailDraft = typeof emailDrafts.$inferInsert;
+
+/**
+ * User writing style profiles - learns communication style from sent emails
+ */
+export const userWritingStyles = mysqlTable("user_writing_styles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  toneProfile: json("toneProfile").$type<{
+    formality: number; // 0-100
+    friendliness: number; // 0-100
+    directness: number; // 0-100
+  }>(),
+  commonPhrases: json("commonPhrases").$type<string[]>(), // ["Mvh", "Tak for din henvendelse"]
+  closingSignature: varchar("closingSignature", { length: 255 }), // "Mvh,\nJonas\nRendetalje\n22 65 02 26"
+  sentEmailAnalyzed: int("sentEmailAnalyzed").default(0).notNull(), // Number of sent emails analyzed
+  lastAnalyzedAt: timestamp("lastAnalyzedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserWritingStyle = typeof userWritingStyles.$inferSelect;
+export type InsertUserWritingStyle = typeof userWritingStyles.$inferInsert;
